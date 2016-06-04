@@ -1,0 +1,109 @@
+<section class="webmentions container">
+	{% set mentions = craft.webmention.getAllWebmentionsForEntry(url) %}
+	{% set nummentions = mentions|length %}
+	{% set likescounter = 0 %}
+	{% set repostscounter = 0 %}
+	<h2>{{nummentions}} Webmention{% if nummentions != 1 %}s{% endif %}</h2>
+	{% if nummentions == 0 %}<p>¯\_(ツ)_/¯</p>
+	{% else %}
+	{% for block in mentions %}
+		{% if (block.type == "mention") or (block.type == "comment")%}
+		<article class="webmention webmention-{{block.type}} p-comment h-cite">
+			<figure class="p-author h-card">
+				{% if block.author_photo %}
+				<a href="{{block.author_url}}" class="avatar" title="{{block.author_name}}">
+					<img class="webmention__author-photo u-photo" src="{{block.author_photo}}" alt="Photo of {{block.author_name}}">
+				</a>
+				{% endif %}
+				<figcaption class="webmention__author-name p-name"><a href="{{block.author_url}}">{{block.author_name}}</a><a href="{{block.url}}" class="u-url"><time datetime="{{block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{block.published.format('j F Y | H:i')}}</time></a></figcaption>
+				</a>
+			</figure>
+			<section class="webmention__body">
+				{% if block.name %}
+					<a href="{{block.url}}" class="u-url">
+						<h3 class="webmention__name p-content p-name">
+							{{block.name}}
+						</h3>
+					</a>
+				{% endif %}
+				{% if block.text and block.text != '0' %}
+					{{block.text}}
+				{% endif %}
+			</section>
+			{# <section class="webmention__meta">
+				<cite>
+					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
+				</cite>
+			</section> #}
+		</article>
+		{% endif %}
+  {% endfor %}
+  
+  {% for block in mentions %}
+		{% if block.type == "like" %}
+		{% if likescounter == 0 %}
+			<h3>Likes</h3>
+			{% set likescounter = 1 %}
+		{% endif %}
+		<article class="webmention webmention-{{block.type}} p-{{block.type}} h-cite">
+			<figure class="p-author h-card">
+				{% if block.author_photo %}
+				<a href="{{block.author_url}}" class="avatar" title="{{block.author_name}}">
+					<img class="webmention__author-photo u-photo" src="{{block.author_photo}}" alt="Photo of {{block.author_name}}">
+				</a>
+				{% endif %}
+				<figcaption class="webmention__author-name p-name"><a href="{{block.author_url}}">{{block.author_name}}</a><a href="{{block.url}}" class="u-url"><time datetime="{{block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{block.published.format('j F Y | H:i')}}</time></a></figcaption>
+				</a>
+			</figure>
+			<section class="webmention__body">
+				{% if block.text and block.text != '0' %}
+					{{block.text}}
+				{% endif %}
+			</section>
+			{# <section class="webmention__meta">
+				<cite>
+					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
+				</cite>
+			</section> #}
+		</article>
+		{% endif %}
+  {% endfor %}
+  
+  {% for block in mentions %}
+		{% if block.type == "repost" %}
+		{% if repostscounter == 0 %}
+			<h3>Reposts</h3>
+			{% set repostscounter = 1 %}
+		{% endif %}
+		<article class="webmention webmention-{{block.type}} p-{{block.type}} h-cite">
+			<figure class="p-author h-card">
+				{% if block.author_photo %}
+				<a href="{{block.author_url}}" class="avatar" title="{{block.author_name}}">
+					<img class="webmention__author-photo u-photo" src="{{block.author_photo}}" alt="Photo of {{block.author_name}}">
+				</a>
+				{% endif %}
+				<figcaption class="webmention__author-name p-name"><a href="{{block.author_url}}">{{block.author_name}}</a><a href="{{block.url}}" class="u-url"><time datetime="{{block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{block.published.format('j F Y | H:i')}}</time></a></figcaption>
+				</a>
+			</figure>
+			<section class="webmention__body">
+				{% if block.name and block.type != 'like' %}
+					<a href="{{block.url}}" class="u-url">
+						<h3 class="webmention__name p-content p-name">
+							{{block.name}}
+						</h3>
+					</a>
+				{% endif %}
+				{% if block.text and block.text != '0' %}
+					{{block.text}}
+				{% endif %}
+			</section>
+			{# <section class="webmention__meta">
+				<cite>
+					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
+				</cite>
+			</section> #}
+		</article>
+		{% endif %}
+  {% endfor %}
+	{% endif %}
+</section>

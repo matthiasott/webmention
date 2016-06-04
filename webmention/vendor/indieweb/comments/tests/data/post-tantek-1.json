@@ -1,0 +1,111 @@
+{
+  "type": [
+    "h-as-note",
+    "h-entry"
+  ],
+  "properties": {
+    "in-reply-to": [
+      {
+        "type": [
+          "h-cite"
+        ],
+        "properties": {
+          "name": [
+            "http:\/\/aaronparecki.com\/notes\/2013\/10\/12\/2\/indieweb"
+          ],
+          "url": [
+            "http:\/\/aaronparecki.com\/notes\/2013\/10\/12\/2\/indieweb"
+          ]
+        },
+        "value": "http:\/\/aaronparecki.com\/notes\/2013\/10\/12\/2\/indieweb"
+      },
+      {
+        "type": [
+          "h-cite"
+        ],
+        "properties": {
+          "name": [
+            "http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments"
+          ],
+          "url": [
+            "http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments"
+          ]
+        },
+        "value": "http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments"
+      }
+    ],
+    "author": [
+      {
+        "type": [
+          "h-card"
+        ],
+        "properties": {
+          "name": [
+            "Tantek \u00c7elik"
+          ],
+          "photo": [
+            "http:\/\/tantek.com\/logo.jpg"
+          ],
+          "url": [
+            "http:\/\/tantek.com\/"
+          ]
+        },
+        "value": ""
+      }
+    ],
+    "name": [
+      "Well done @aaronpk! Real-time #indieweb comments:\nhttp:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\n\nI only mentioned the idea at the @indiewebcamp dinner at 21st Amendment http:\/\/aaronparecki.com\/events\/2013\/09\/30\/1\/indieweb-dinner-at-21st-amendment and he's already implemented it live on his site! \n\nAt the dinner, Aaron & Amber had noted they were going to attend a realtime conference and asked if I had any suggestions for things to show or talk about. I pointed out that the only silo (AFAIK) that was really \"realtime\" was Facebook, since pages you were viewing updated automatically when others added to them, e.g. comments.\n\nI said wouldn't it be awesome if indieweb comments worked like that too, because then we'd instantly have something that Twitter, G+, etc. all the other silos did NOT have. Plus it would make for a great indieweb demo.\n\nAnd there it is:\n\n\n\nRead Aaron's whole blog post on the design and implementation (you know, the stuff that counts, as ideas are cheap :) with source:\n\nhttp:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\n\nUpdate: showing this off 2013-10-14 to folks at the New York Times."
+    ],
+    "url": [
+      "http:\/\/tantek.com\/2013\/286\/t1\/real-time-indieweb-comments"
+    ],
+    "uid": [
+      "http:\/\/tantek.com\/2013\/286\/t1\/real-time-indieweb-comments"
+    ],
+    "syndication": [
+      "http:\/\/twitter.com\/t\/status\/389368111428018176"
+    ],
+    "published": [
+      "2013-10-13T05:32"
+    ],
+    "updated": [
+      "2013-10-13T05:32"
+    ],
+    "content": [
+      {
+        "html": "Well done <a class=\"auto-link h-x-username\" href=\"https:\/\/twitter.com\/aaronpk\">@aaronpk<\/a>! Real-time #indieweb comments:\n<a class=\"auto-link\" href=\"http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\">http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments<\/a>\n\nI only mentioned the idea at the <a class=\"auto-link h-x-username\" href=\"https:\/\/twitter.com\/indiewebcamp\">@indiewebcamp<\/a> dinner at 21st Amendment <a class=\"auto-link\" href=\"http:\/\/aaronparecki.com\/events\/2013\/09\/30\/1\/indieweb-dinner-at-21st-amendment\">http:\/\/aaronparecki.com\/events\/2013\/09\/30\/1\/indieweb-dinner-at-21st-amendment<\/a> and he's already implemented it live on his site! \n\nAt the dinner, Aaron &amp; Amber had noted they were going to attend a realtime conference and asked if I had any suggestions for things to show or talk about. I pointed out that the only silo (AFAIK) that was really \"realtime\" was Facebook, since pages you were viewing updated automatically when others added to them, e.g. comments.\n\nI said wouldn't it be awesome if indieweb comments worked like that too, because then we'd instantly have something that Twitter, G+, etc. all the other silos did NOT have. Plus it would make for a great indieweb demo.\n\nAnd there it is:\n\n<a class=\"auto-link figure\" href=\"http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/files\/realtime-indieweb-comments.gif\"><img src=\"http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/files\/realtime-indieweb-comments.gif\"><\/img><\/a>\n\nRead Aaron's whole blog post on the design and implementation (you know, the stuff that counts, as ideas are cheap :) with source:\n\n<a class=\"auto-link\" href=\"http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\">http:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments<\/a>\n\nUpdate: showing this off 2013-10-14 to folks at the New York Times.",
+        "value": "Well done @aaronpk! Real-time #indieweb comments:\nhttp:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\n\nI only mentioned the idea at the @indiewebcamp dinner at 21st Amendment http:\/\/aaronparecki.com\/events\/2013\/09\/30\/1\/indieweb-dinner-at-21st-amendment and he's already implemented it live on his site! \n\nAt the dinner, Aaron & Amber had noted they were going to attend a realtime conference and asked if I had any suggestions for things to show or talk about. I pointed out that the only silo (AFAIK) that was really \"realtime\" was Facebook, since pages you were viewing updated automatically when others added to them, e.g. comments.\n\nI said wouldn't it be awesome if indieweb comments worked like that too, because then we'd instantly have something that Twitter, G+, etc. all the other silos did NOT have. Plus it would make for a great indieweb demo.\n\nAnd there it is:\n\n\n\nRead Aaron's whole blog post on the design and implementation (you know, the stuff that counts, as ideas are cheap :) with source:\n\nhttp:\/\/aaronparecki.com\/articles\/2013\/10\/13\/1\/realtime-indieweb-comments\n\nUpdate: showing this off 2013-10-14 to folks at the New York Times."
+      }
+    ]
+  },
+  "children": [
+    {
+      "type": [
+        "h-x-username"
+      ],
+      "properties": {
+        "name": [
+          "@aaronpk"
+        ],
+        "url": [
+          "https:\/\/twitter.com\/aaronpk"
+        ]
+      },
+      "value": "@aaronpk"
+    },
+    {
+      "type": [
+        "h-x-username"
+      ],
+      "properties": {
+        "name": [
+          "@indiewebcamp"
+        ],
+        "url": [
+          "https:\/\/twitter.com\/indiewebcamp"
+        ]
+      },
+      "value": "@indiewebcamp"
+    }
+  ]
+}

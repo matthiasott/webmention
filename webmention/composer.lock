@@ -1,0 +1,179 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "ddca257c13f1637df3a0630d7f79ed81",
+    "content-hash": "2c724eef29e291f36e1e12dfc3c1ff6f",
+    "packages": [
+        {
+            "name": "indieweb/comments",
+            "version": "0.1.10",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/indieweb/php-comments.git",
+                "reference": "804e3863ca58edc7c1897d3f1d11f7d086636886"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/indieweb/php-comments/zipball/804e3863ca58edc7c1897d3f1d11f7d086636886",
+                "reference": "804e3863ca58edc7c1897d3f1d11f7d086636886",
+                "shasum": ""
+            },
+            "require": {
+                "tantek/cassis": "0.1.16124"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/indieweb/comments.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Aaron Parecki",
+                    "homepage": "http://aaronparecki.com"
+                }
+            ],
+            "keywords": [
+                "comments",
+                "indieweb"
+            ],
+            "time": "2015-10-06 16:23:56"
+        },
+        {
+            "name": "indieweb/representative-h-card",
+            "version": "0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/indieweb/representative-h-card-php.git",
+                "reference": "b70b01bd0dd7f2a940602137335dbf46ab6e2e38"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/indieweb/representative-h-card-php/zipball/b70b01bd0dd7f2a940602137335dbf46ab6e2e38",
+                "reference": "b70b01bd0dd7f2a940602137335dbf46ab6e2e38",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "require-dev": {
+                "mf2/mf2": "0.2.*",
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/mf2/representative-h-card.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Aaron Parecki",
+                    "homepage": "http://aaronparecki.com"
+                }
+            ],
+            "keywords": [
+                "h-card",
+                "indieweb",
+                "mf2",
+                "microformats"
+            ],
+            "time": "2015-12-23 18:11:19"
+        },
+        {
+            "name": "mf2/mf2",
+            "version": "v0.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/indieweb/php-mf2.git",
+                "reference": "4fb2eb5365cbc0fd2e0c26ca748777d6c2539763"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/indieweb/php-mf2/zipball/4fb2eb5365cbc0fd2e0c26ca748777d6c2539763",
+                "reference": "4fb2eb5365cbc0fd2e0c26ca748777d6c2539763",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "3.7.*"
+            },
+            "suggest": {
+                "barnabywalters/mf-cleaner": "To more easily handle the canonical data php-mf2 gives you"
+            },
+            "bin": [
+                "bin/fetch-mf2",
+                "bin/parse-mf2"
+            ],
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "Mf2/Parser.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "CC0"
+            ],
+            "authors": [
+                {
+                    "name": "Barnaby Walters",
+                    "homepage": "http://waterpigs.co.uk"
+                }
+            ],
+            "description": "A pure, generic microformats2 parser — makes HTML as easy to consume as a JSON API",
+            "keywords": [
+                "html",
+                "microformats",
+                "microformats 2",
+                "parser",
+                "semantic"
+            ],
+            "time": "2016-03-14 12:13:34"
+        },
+        {
+            "name": "tantek/cassis",
+            "version": "v0.1.16124",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tantek/cassis.git",
+                "reference": "b9ec7142179950010c896ec3894aece0a56b0029"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tantek/cassis/zipball/b9ec7142179950010c896ec3894aece0a56b0029",
+                "reference": "b9ec7142179950010c896ec3894aece0a56b0029",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "cassis-loader.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "time": "2014-02-18 20:17:32"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}
