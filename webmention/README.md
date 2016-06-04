@@ -12,7 +12,7 @@ This plugin provides a [Webmention](https://www.w3.org/TR/webmention/) endpoint 
 ## Configuration
 
 ### Webmention endpoint
-In order to receive Webmentions, the Webmention endpoint for your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the `<head>` section of your main layout template:
+In order to receive Webmentions, the Webmention endpoint for your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the <head>` section of your main layout template:
 
 ```
 <link rel="webmention" href="{{ craft.webmention.endpointUrl }}" />
@@ -24,7 +24,7 @@ And/or you can set an HTTP Link header by adding this line to your main layout t
 {% header "Link: <" ~ craft.webmention.endpointUrl ~ ">; rel=\"webmention\"" %}
 ```
 
-The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your sites endoint route. The Twig template for the Webmention endpoint will extend your standard template and is copied to `craft/templates/webmention/_index.html` on install. You can then adjust the template to your need. Note: Even if you define a different route for the endpoint, the plugin will still look for the template in this folder.
+The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your site's endoint route. The Twig template for the Webmention endpoint will extend your standard template and is copied to `craft/templates/webmention/_index.html` on install. You can then adjust the template to your needs. Note: Even if you define a different route for the endpoint, the plugin will still look for the template in this folder.
 
 ### Displaying Webmentions
 To output all Webmentions for the current request URL, you can use the following helper in your templates:
@@ -100,15 +100,7 @@ The Webmention plugin validates and processes the request and then returns HTTP 
 * Also, if the provided `source` is not linking back to `target`, the answer will be a resounding **400 Bad Request**!
 * On success, the plugin responds with a status of **200 OK**.
 
-**Note: Currently, the plugin does not process the Webmention verification asynchronously yet.**
-
-## Thank You!
-Thanks to everyone who helped me setting this up:
-* [Aaron Parecki](https://aaronparecki.com/) (@aaronpk) for support and feedback – and also for the great work he does related to Webmention.
-* [Bastian Allgeier](http://bastianallgeier.com) (@bastianallgeier) for allowing me to get highly inspired by his [Kirby Webmentions Plugin](https://github.com/bastianallgeier/kirby-webmentions)
-* [Tom Arnold](https://www.webrocker.de/) (@webrocker) for relentlessly sending test Webmentions. ;)
-* [Jeremy Keith](https://adactio.com) (@adactio) for the feedback and also for giving the initial spark.
-* Everyone at the IndieWebCamp Düsseldorf 2016 and the IndieWeb Community
+**Note: Currently, the plugin does not process the Webmention verification asynchronously.**
 
 ## Changelog
 
@@ -121,6 +113,14 @@ Thanks to everyone who helped me setting this up:
 * Provide an interface for managing Webmentions (deletion!) in the backend
 * Provide an easy way to change how Webmentions are displayed (e. g. grouping y/n)
 * …
+
+## Thank You!
+Thanks to everyone who helped me setting this up:
+* [Aaron Parecki](https://aaronparecki.com/) (@aaronpk) for support and feedback – and also for the great work he does related to Webmention.
+* [Bastian Allgeier](http://bastianallgeier.com) (@bastianallgeier) for allowing me to get highly inspired by his [Kirby Webmentions Plugin](https://github.com/bastianallgeier/kirby-webmentions)
+* [Tom Arnold](https://www.webrocker.de/) (@webrocker) for relentlessly sending test Webmentions. ;)
+* [Jeremy Keith](https://adactio.com) (@adactio) for the feedback and also for giving the initial spark.
+* Everyone at the IndieWebCamp Düsseldorf 2016 and in the IndieWeb Community
 
 ## License 
 
