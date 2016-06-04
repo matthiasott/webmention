@@ -12,7 +12,7 @@ This plugin provides a [Webmention](https://www.w3.org/TR/webmention/) endpoint 
 ## Configuration
 
 ### Webmention endpoint
-In order to receive Webmentions, the Webmention endpoint for your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the <head> section of your main layout template:
+In order to receive Webmentions, the Webmention endpoint for your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the `<head>` section of your main layout template:
 
 ```
 <link rel="webmention" href="{{ craft.webmention.endpointUrl }}" />
