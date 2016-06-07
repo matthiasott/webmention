@@ -1,0 +1,48 @@
+{% extends "_layouts/cp" %}
+
+{% set title = "Webmention"|t %}
+{% import "_includes/forms" as forms %}
+
+{% set tabs = {
+    webmention: { label: "Webmentions"|t, url: url('webmention') },
+    settings: { label: "Settings"|t, url: url('webmention/settings') },
+} %}
+
+{% set selectedTab = 'settings' %}
+
+{% set settings = craft.webmention.getSettings() %}
+
+{% block content %}
+
+		<form method="post" accept-charset="UTF-8" data-saveshortcut="1">
+		<input type="hidden" name="action" value="plugins/savePluginSettings">
+		<input type="hidden" name="pluginClass" value="webmention">
+
+		{% namespace 'settings' %}
+
+    {{ forms.textField({'label': 'Webmention Endpoint Route (Slug)', 'instructions': 'Set the URL slug / route of your Webmention endpoint here. Defaults to "webmention", but you can insert anything that makes sense to you…', 'id': 'endpointSlug', 'name': 'endpointSlug', 'value': settings.endpointSlug}) }}
+
+    {{ forms.textField({'label': 'Webmention Endpoint Layout Template', 'instructions': 'Set the name of the main layout template for the Webmention endpoint. Default is "_layout".', 'id': 'layout', 'name': 'layout', 'value': settings.layout}) }}
+
+    {{ forms.textField({'label': 'Maximum Length of Webmention Text', 'instructions': 'Set the maximum character count for summaries, comments and text excerpts from posts.', 'id': 'maxTextLength', 'name': 'maxTextLength', 'value': settings['maxTextLength']}) }}
+
+    {{ forms.lightswitchField({
+			first: true,
+			label: 'Parse Brid.gy Webmentions',
+			instructions: 'Brid.gy sends Webmentions for comments, retweets and other interactions on Twitter, Facebook, Google+, Instagram, and Flickr.'|t,
+			name: 'useBridgy',
+			on: settings.useBridgy,
+		}) }}
+		
+		{{ forms.textField({'label': 'Avatar Storage Folder', 'instructions': 'This plugin saves user photos (avatars) for incoming Webmentions to avoid exploits. Set the name of the folder where user avatars will be stored. \<br\>\<strong\>Note: For now, this will create a new subfolder in your default assets folder. So there has to be at least one asset source defined! \;\) \<\/strong\>\<br\> Also, if you change this name, avatars that have been stored before won\'t be moved to the new path.', 'id': 'avatarPath', 'name': 'avatarPath', 'value': settings.avatarPath}) }}
+
+		<hr>
+		{% endnamespace %}
+
+		<div class="buttons">
+			<input class="btn submit" type="submit" value="{{ 'Save'|t }}">
+		</div>
+
+		</form>
+
+{% endblock %}

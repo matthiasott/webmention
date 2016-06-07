@@ -111,6 +111,10 @@ class WebmentionService extends BaseApplicationComponent
      */
     public function saveWebmention(Webmention_WebmentionModel $model)
     {
+        
+
+        $isNewWebmention = !$model->getAttribute('id');
+
         if ($id = $model->getAttribute('id')) {
             if (null === ($record = $this->webmentionRecord->findByPk($id))) {
                 throw new Exception(Craft::t('Can\'t find webmention with ID "{id}"', array('id' => $id)));
@@ -121,7 +125,17 @@ class WebmentionService extends BaseApplicationComponent
 
         $record->setAttributes($model->getAttributes(), false);
 
-        if ($record->save()) {
+        $success = craft()->elements->saveElement($model, false);
+
+        if (!$success) {
+            return array('error' => $model->getErrors());
+        }
+
+        if ($isNewWebmention) {
+            $record->id = $model->id;
+        }
+
+        if ($record->save(false)) {
             // update id on model (for new records)
             $model->setAttribute('id', $record->getAttribute('id'));
 
@@ -143,4 +157,20 @@ class WebmentionService extends BaseApplicationComponent
     {
         return $this->webmentionRecord->deleteByPk($id);
     }
+
+    /**
+     * Delete a webmention from the database.
+     *
+     * @param  int $id
+     * @return int The number of rows affected
+     */
+    public function deleteWebmentions($ids)
+    {
+            foreach ($ids as $id)
+            {
+                $this->webmentionRecord->deleteByPk($id);
+            }
+        return true;
+    }
+
 }

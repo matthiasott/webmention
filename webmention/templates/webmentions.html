@@ -55,11 +55,6 @@
 				<figcaption class="webmention__author-name p-name"><a href="{{block.author_url}}">{{block.author_name}}</a><a href="{{block.url}}" class="u-url"><time datetime="{{block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{block.published.format('j F Y | H:i')}}</time></a></figcaption>
 				</a>
 			</figure>
-			<section class="webmention__body">
-				{% if block.text and block.text != '0' %}
-					{{block.text}}
-				{% endif %}
-			</section>
 			{# <section class="webmention__meta">
 				<cite>
 					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
@@ -93,9 +88,9 @@
 						</h3>
 					</a>
 				{% endif %}
-				{% if block.text and block.text != '0' %}
+				{# {% if block.text and block.text != '0' %}
 					{{block.text}}
-				{% endif %}
+				{% endif %} #}
 			</section>
 			{# <section class="webmention__meta">
 				<cite>

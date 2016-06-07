@@ -17,10 +17,10 @@ class Webmention_WebmentionController extends BaseController
      * @param string $src
      * @return string
      */
-    public function checkResponseType(&$result, $src) {
+    public function checkResponseType(&$result, $entry, $src, $useBridgy) {
 
         /* Check for brid.gy first */
-        if(!empty($src) and (preg_match('!http(.*?)://brid-gy.appspot.com!', $src) or preg_match('!http(.*?)://brid.gy!', $src))) {
+        if(!empty($src) and ($useBridgy == true) and (preg_match('!http(.*?)://brid-gy.appspot.com!', $src) or preg_match('!http(.*?)://brid.gy!', $src))) {
 
             /* Is it Twitter? */
             if(!empty($result['url']) and preg_match('!http(.*?)://twitter.com/(.*?)/status!', $result['url'])) {
@@ -59,8 +59,14 @@ class Webmention_WebmentionController extends BaseController
             if(preg_match('/rsvp/', $src)) {
                 $result['type'] = 'rsvp';
             }
+        } else {
+            if (isset($entry[properties][like-of]) || isset($entry[properties][like])) {
+                $result['type'] = 'like';
+            }
+            if (isset($entry[properties][repost-of]) || isset($entry[properties][repost])) {
+                $result['type'] = 'repost';
+            }
         }
-        
     }
 
     /**
@@ -204,6 +210,10 @@ class Webmention_WebmentionController extends BaseController
         $html = preg_replace('~(?!.*;$)&#x([0-9a-fA-F]+)~i', "&#x\\1;", $html);
         $html = html_entity_decode($html, ENT_QUOTES, "utf-8");
 
+        /* HTMLPurifier doesn't know HTML5 tags, so we'll replace the structural tags (http://developers.whatwg.org/sections.html) with div tags 
+        This is a working workaround :) */
+        $html = preg_replace('/(<|\/)(section|article|nav|aside|hgroup|header|footer|address)(\s|>)/i', '$1div$3', $html);
+
         /* Purify HTML with Yii's HTMLPurifier wrapper */
         $purifier = new \CHtmlPurifier();
         $purifier->options = array('URI.AllowedSchemes'=>array(
@@ -217,7 +227,6 @@ class Webmention_WebmentionController extends BaseController
 
         /* Let's look up where the h-entry is and use this array */
         foreach($parsed['items'] as $item){
-
           if ( in_array('h-entry', $item['type']) || in_array('p-entry', $item['type'])) {
              $entry = $item;
           }
@@ -231,9 +240,9 @@ class Webmention_WebmentionController extends BaseController
           throw new Exception('Probably spam');
         }
 
-        if ($settings->useBridgy){
-            $this->checkResponseType($result, $src);
-        }
+        /* Determine the type of the repsonse */
+        $this->checkResponseType($result, $entry, $src, $settings->useBridgy);
+        
         if (function_exists('http_response_code')) {
             http_response_code(202);
         }
