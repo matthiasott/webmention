@@ -104,13 +104,18 @@ The Webmention plugin validates and processes the request and then returns HTTP 
 
 ## Changelog
 
+### 0.2.0
+
+- Webmentions are now stored as Craft elements (ElementType: `Webmention_webmention`)
+- Improved backend functionality: Webmentions are displayed under the tab *Webmentions* and can be deleted
+- The plugin now sets the `type` property of an incoming Webmention correctly, based on the [Microformats](http://microformats.org/wiki/h-entry) properties `u-like-of`, `u-like`, `u-repost-of`, and `u-repost`.
+
 ### 0.1.0
 
 * First version
 
 ## Roadmap
 * Process Webmentions asynchronously
-* Provide an interface for managing Webmentions (deletion!) in the backend
 * Provide an easy way to change how Webmentions are displayed (e. g. grouping y/n)
 * …
 
