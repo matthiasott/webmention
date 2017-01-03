@@ -115,6 +115,7 @@ The Webmention plugin validates and processes the request and then returns HTTP 
 * First version
 
 ## Roadmap
+* Add Webmention sending functionality
 * Process Webmentions asynchronously
 * Provide an easy way to change how Webmentions are displayed (e. g. grouping y/n)
 * …
