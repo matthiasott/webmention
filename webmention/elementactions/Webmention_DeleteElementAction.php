@@ -19,7 +19,7 @@ class Webmention_DeleteElementAction extends DeleteElementAction
 	{
 		craft()->webmention->deleteWebmentions($criteria->ids());
 
-		$this->setMessage(Craft::t('Wementions deleted.'));
+		$this->setMessage(Craft::t('Webmentions deleted.'));
 
 		return true;
 	}

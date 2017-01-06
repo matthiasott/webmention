@@ -36,7 +36,35 @@
 		
 		{{ forms.textField({'label': 'Avatar Storage Folder', 'instructions': 'This plugin saves user photos (avatars) for incoming Webmentions to avoid exploits. Set the name of the folder where user avatars will be stored. \<br\>\<strong\>Note: For now, this will create a new subfolder in your default assets folder. So there has to be at least one asset source defined! \;\) \<\/strong\>\<br\> Also, if you change this name, avatars that have been stored before won\'t be moved to the new path.', 'id': 'avatarPath', 'name': 'avatarPath', 'value': settings.avatarPath}) }}
 
+		<div class="field" id="settings-layout-field">
+			<div class="heading">
+					<label id="settings-layout-label">Entry Types</label>
+					<div class="instructions">
+						<p>Select all entry types for which you want to send Webmentions. <strong>Note: When new entry types (and sections) are added, they are set to “send Webmentions” by default.</strong></p>
+					</div>
+			</div>
+			{% for option in settings.entryTypes %}
+				<div>
+
+				{% set id = ('checkbox'~random()) %}
+
+				<input type="hidden" name="entryTypes[{{ option.handle }}][handle]" value="{{ option.handle }}">
+				<input type="hidden" name="entryTypes[{{ option.handle }}][label]" value="{{ option.label }}">
+				<input type="hidden" name="entryTypes[{{ option.handle }}][checked]" value="0">
+
+				<input type="checkbox" value="entryTypes[{{ option.handle }}][checked]"
+					id="{{ id }}"
+					class="checkbox"
+					name="entryTypes[{{ option.handle }}][checked]"
+					{%- if option.checked is defined and option.checked %} checked{% endif %} >
+
+				<label for="{{ id }}">{{ option.label|raw }}</label>
+				</div>
+			{% endfor %}
+		</div>
+
 		<hr>
+
 		{% endnamespace %}
 
 		<div class="buttons">
