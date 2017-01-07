@@ -42,13 +42,13 @@ Simply use this helper:
 ```
 
 ## Sending Webmentions
-Once installed, your Craft site will send Webmentions to other sites. On every save of a published entry, the plugin scans the complete entry for any occurrences of URLs and then sends Webmentions to the corresponding Webmention endpoints.
+Once installed, your Craft site will automatically send Webmentions to other sites. On every save of a published entry, the plugin scans the complete entry for any occurrences of URLs and then sends Webmentions to the corresponding Webmention endpoints.
 
 ### Sending Webmentions for certain entry types only
 By default, Webmentions are sent for all entry types but you can also restrict this to certain entry types. Please make sure to go to the settings page of the plugin and select for which entry types Webmentions should be sent.
 
 ### Switching Webmentions on/off for individual entries
-There may be times you want to disable the Webmentions sending functionality on a per-entry basis. This can be accomlished by adding a new “Webmention Switch” field to the field layout of an Entry Type.
+There may be times you want to disable the Webmentions sending functionality on a per-entry basis. This can be accomplished by adding a new “Webmention Switch” field to the field layout of an Entry Type.
 
 ![Screenshot showing the creation of a new field](/webmention/resources/screenshot-craft-webmention-create-new-field.jpg?raw=true)
 
