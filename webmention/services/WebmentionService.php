@@ -234,10 +234,10 @@ class WebmentionService extends BaseApplicationComponent
                 $result['type'] = 'rsvp';
             }
         } else {
-            if (isset($entry[properties][like-of]) || isset($entry[properties][like])) {
+            if (isset($entry['properties']['like-of']) || isset($entry['properties']['like'])) {
                 $result['type'] = 'like';
             }
-            if (isset($entry[properties][repost-of]) || isset($entry[properties][repost])) {
+            if (isset($entry['properties']['repost-of']) || isset($entry['properties']['repost'])) {
                 $result['type'] = 'repost';
             }
         }
@@ -321,17 +321,26 @@ class WebmentionService extends BaseApplicationComponent
         $xpath = new \DOMXPath($doc);
         
         foreach($xpath->query('//a[@href]') as $href) {
-          $url = $href->getAttribute('href');
-          if($url == $target) {
+            $url = $href->getAttribute('href');
+            $longurl = "";
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_HEADER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+            $a = curl_exec($ch);
+            if(preg_match('#Location: (.*)#', $a, $r))
+            $longurl = trim($r[1]);
+          if($url == $target || $longurl == $target) {
             // FOUND THE LINK!
             $found = true;
             break;
           }
         }
 
-        if(!$found) {
+        if(empty($found)) {
             craft()->userSession->setError(Craft::t("It seems like the source you provided does not include a link to the target."));
-            /* Stop and render endpoint */
+            // Stop and render endpoint 
             if (function_exists('http_response_code')) {
                 http_response_code(400);
             }
@@ -418,27 +427,27 @@ class WebmentionService extends BaseApplicationComponent
         }
 
         /* If author name is empty use the one from the representative h-card */
-        if(!$result['author']['name']){
+        if(empty($result['author']['name'])){
             if ($representative){
                 $result['author']['name'] = $representative['properties']['name'][0];
             }
         }
         /* If author url is empty use the one from the representative h-card */
-        if(!$result['author']['url']){
+        if(empty($result['author']['url'])){
             if ($representative){
                 $result['author']['url'] = $representative['properties']['url'][0];
             }
         }
         /* If url is empty use source url */
-        if(!$result['url']){
+        if(empty($result['url'])){
             $result['url'] = $src;
         }
         /* Use domain if 'site' ∉ {twitter, facebook, googleplus, instagram, flickr} */
-        if(!$result['site']){
+        if(empty($result['site'])){
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
         /* If no author photo is defined, check gravatar for image */
-        if(!$result['author']['photo']){
+        if(empty($result['author']['photo'])){
             if ($representative['properties']['photo'][0]) {
                 $result['author']['photo'] = $representative['properties']['photo'][0];
             } else {
@@ -607,6 +616,8 @@ class WebmentionService extends BaseApplicationComponent
         $values = array();
         $webmentionSetting = false;
 
+        $str = "";
+
         // check if Webmention sending is allowed for this entry type (CP settings)
         // first check if entry type is known
         if (array_key_exists($entryType, $settings->entryTypes)) {
@@ -639,20 +650,42 @@ class WebmentionService extends BaseApplicationComponent
 
         // only send Webmentions if entry is enabled
         if ($entry->getStatus() == 'live' && $webmentionSetting == true) {
-
-            // first we get all values from all fields
+            $str = $str . $entry->title;
+            // get all values from all fields
             foreach ($entry->getFieldLayout()->getFields() as $fieldLayoutField) {
                 // get the FieldModel 
                 $field = $fieldLayoutField->getField();
+                $fieldhandle = $field->handle;
+                $fieldcontent = $entry->$fieldhandle;
 
-                // Now get the prepped field value
-                $value = $entry->getFieldValue($field->handle);
-
-                $values[$field->handle] = $value;
+                if (is_string($fieldcontent)) {
+                    $str = $str . $entry->$fieldhandle;
+                } else if (is_bool($fieldcontent)) {
+                    $str = $str . $entry->$fieldhandle;
+                } else {
+                    switch (get_class($fieldcontent)) {
+                        case 'Craft\ElementCriteriaModel':
+                            if (get_class($fieldcontent->getElementType()) == 'Craft\MatrixBlockElementType') {
+                                foreach($fieldcontent as $block) {
+                                    foreach ($block->getFieldLayout()->getFields() as $blockLayoutField){
+                                        $class = get_class($blockLayoutField->getField()->getFieldType());
+                                        if ($class == 'Craft\RichTextFieldType' || $class == 'Craft\PlainTextFieldType' || $class == '') {
+                                            $nomen = $blockLayoutField->getField()->handle;
+                                            $str = $str . $block->$nomen;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        case 'Craft\RichTextData':
+                            $str = $str . $fieldcontent->getRawContent();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                
             }
-
-            // Print array values to string
-            $str = print_r($values, true);
 
             // Get the URLs!
             $targets = $this->_extractUrls( $str );

@@ -126,6 +126,11 @@ The Webmention plugin validates and processes the request and then returns HTTP 
 
 ## Changelog
 
+### 0.3.1
+
+- Changed the retrieval method for links within an entry to fix a bug where a very long article with many links would lead to a PHP execution timeout
+- Minor bugfixes and improvements
+
 ### 0.3.0
 
 - Webmention sending functionality implemented

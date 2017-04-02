@@ -33,7 +33,7 @@ class WebmentionPlugin extends BasePlugin
 
     public function getVersion()
     {
-        return '0.1.0';
+        return '0.3.1';
     }
 
     public function getDeveloper()
@@ -51,7 +51,7 @@ class WebmentionPlugin extends BasePlugin
     }
     public function getDescription()
     {
-        return 'Receive Webmentions and show them on your site.';
+        return 'Send and receive Webmentions and show them on your site.';
     }
 
     public function hasCpSection()
