@@ -369,7 +369,6 @@ class WebmentionService extends BaseApplicationComponent
         $html = mb_decode_numericentity($html, $convmap, 'UTF-8');
         $html = mb_convert_encoding($html, 'HTML-ENTITIES');
         $html = htmlspecialchars_decode($html);
-        $html = preg_replace('~&#([0-9]+)~', "&#\\1;", $html);
         $html = preg_replace('~(?!.*;$)&#x([0-9a-fA-F]+)~i', "&#x\\1;", $html);
         $html = html_entity_decode($html, ENT_QUOTES, "utf-8");
 
