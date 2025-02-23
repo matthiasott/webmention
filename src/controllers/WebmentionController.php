@@ -11,6 +11,7 @@ use yii\web\Response;
 class WebmentionController extends Controller
 {
     protected array|bool|int $allowAnonymous = true;
+    public $enableCsrfValidation = false;
 
     /**
      * Check the response type and either start handling the webmention or render the webmention endpoint.
