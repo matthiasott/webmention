@@ -10,14 +10,14 @@
       {% if (block.type == "mention") or (block.type == "comment") %}
         <article class="webmention webmention-{{ block.type }} p-comment h-cite">
           <figure class="p-author h-card">
-            {% if block.author_photo %}
-              <a href="{{ block.author_url }}" class="avatar" title="{{ block.author_name }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.author_photo }}"
-                     alt="Photo of {{ block.author_name }}">
+            {% if block.authorPhoto %}
+              <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
+                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                     alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
-                  href="{{ block.author_url }}">{{ block.author_name }}</a><a href="{{ block.url }}" class="u-url">
+                  href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
                 <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
                       class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
               </a></figcaption>
@@ -25,7 +25,7 @@
           </figure>
           <section class="webmention__body">
             {% if block.name %}
-              <a href="{{ block.url }}" class="u-url">
+              <a href="{{ block.hEntryUrl }}" class="u-url">
                 <h3 class="webmention__name p-content p-name">
                   {{ block.name }}
                 </h3>
@@ -52,14 +52,14 @@
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
           <figure class="p-author h-card">
-            {% if block.author_photo %}
-              <a href="{{ block.author_url }}" class="avatar" title="{{ block.author_name }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.author_photo }}"
-                     alt="Photo of {{ block.author_name }}">
+            {% if block.authorPhoto %}
+              <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
+                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                     alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
-                  href="{{ block.author_url }}">{{ block.author_name }}</a><a href="{{ block.url }}" class="u-url">
+                  href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
                 <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
                       class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
               </a></figcaption>
@@ -82,14 +82,14 @@
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
           <figure class="p-author h-card">
-            {% if block.author_photo %}
-              <a href="{{ block.author_url }}" class="avatar" title="{{ block.author_name }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.author_photo }}"
-                     alt="Photo of {{ block.author_name }}">
+            {% if block.authorPhoto %}
+              <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
+                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                     alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
-                  href="{{ block.author_url }}">{{ block.author_name }}</a><a href="{{ block.url }}" class="u-url">
+                  href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
                 <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
                       class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
               </a></figcaption>
@@ -97,7 +97,7 @@
           </figure>
           <section class="webmention__body">
             {% if block.name and block.type != 'like' %}
-              <a href="{{ block.url }}" class="u-url">
+              <a href="{{ block.hEntryUrl }}" class="u-url">
                 <h3 class="webmention__name p-content p-name">
                   {{ block.name }}
                 </h3>

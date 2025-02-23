@@ -45,7 +45,7 @@ class Webmention extends Element
     {
         return [
             ...parent::defineTableAttributes(),
-            'author_name' => Craft::t('webmention', 'Author'),
+            'authorName' => Craft::t('webmention', 'Author'),
             'text' => Craft::t('webmention', 'Text'),
             'target' => Craft::t('webmention', 'Target'),
             'type' => Craft::t('webmention', 'Type'),
@@ -67,7 +67,7 @@ class Webmention extends Element
 
     protected function attributeHtml(string $attribute): string
     {
-        return match ($attribute) {
+        return (string)match ($attribute) {
             'authorName' => Html::tag('strong', $this->$attribute),
             'text' => $this->$attribute,
             'target' => Html::a($this->$attribute, $this->$attribute),

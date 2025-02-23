@@ -154,7 +154,7 @@ class Webmentions extends Component
             /** @var DOMElement $link */
             $linkUrl = $link->getAttribute('href');
             if (strcasecmp($linkUrl, $target) === 0) {
-                return $linkUrl;
+                return $html;
             }
             $linkUrls[] = $linkUrl;
         }
@@ -171,7 +171,7 @@ class Webmentions extends Component
             if ($head->hasHeader('Location')) {
                 $redirect = $head->getHeader('Location')[0];
                 if (strcasecmp($redirect, $target) === 0) {
-                    return $redirect;
+                    return $html;
                 }
             }
         }
@@ -183,11 +183,11 @@ class Webmentions extends Component
      * Parse HTML of a source and populate model
      *
      * @param string $html The HTML of the source
-     * @param string $src The source URL
+     * @param string $source The source URL
      * @param string $target The target URL
      * @return Webmention|false Webmention Model
      */
-    public function parseWebmention(string $html, string $src, string $target): Webmention|false
+    public function parseWebmention(string $html, string $source, string $target): Webmention|false
     {
         // XSS Protection
 
@@ -213,7 +213,7 @@ class Webmentions extends Component
         ]);
 
         // Now the HTML is ready to be parsed with Mf2
-        $parsed = Mf2\parse($html, $src);
+        $parsed = Mf2\parse($html, $source);
 
         // Let's look up where the h-entry is and use this array
         foreach ($parsed['items'] as $item) {
@@ -229,7 +229,7 @@ class Webmentions extends Component
         // Parse comment – with max text length from settings
         $settings = Plugin::getInstance()->settings;
         $maxLength = $settings->maxTextLength;
-        $result = \IndieWeb\comments\parse($entry, $src, $maxLength, 100);
+        $result = \IndieWeb\comments\parse($entry, $source, $maxLength, 100);
 
         if (empty($result)) {
             // probably spam
@@ -237,20 +237,21 @@ class Webmentions extends Component
         }
 
         // Determine the type of the response
-        $this->_checkResponseType($result, $entry, $src, $settings->useBridgy);
+        $this->_checkResponseType($result, $entry, $source, $settings->useBridgy);
 
         // Get h-card and use data for author etc. if not present in h-entry
-        $representative = Mf2\HCard\representative($parsed, $src);
+        $representative = Mf2\HCard\representative($parsed, $source);
 
         // If the source url doesn't give us a representative h-card, try to get one for author url from parsed html
-        if ($representative == null) {
+        if (!$representative) {
             $representative = Mf2\HCard\representative($parsed, $result['author']['url']);
-        }
-        // If this also doesn't work, maybe the h-card can be found in the parsed HTML directly
-        if ($representative == null) {
-            foreach ($parsed['items'] as $item) {
-                if (in_array('h-card', $item['type'])) {
-                    $representative = $item;
+
+            // If this also doesn't work, maybe the h-card can be found in the parsed HTML directly
+            if (!$representative) {
+                foreach ($parsed['items'] as $item) {
+                    if (in_array('h-card', $item['type'])) {
+                        $representative = $item;
+                    }
                 }
             }
         }
@@ -269,14 +270,14 @@ class Webmentions extends Component
         }
         // If url is empty use source url
         if (empty($result['url'])) {
-            $result['url'] = $src;
+            $result['url'] = $source;
         }
         // Use domain if 'site' ∉ {twitter, facebook, googleplus, instagram, flickr}
         if (empty($result['site'])) {
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
         // If no author photo is defined, check gravatar for image
-        if (empty($result['author']['photo'])) {
+        if (empty($result['author']['photo']) && $representative) {
             if ($representative['properties']['photo'][0]) {
                 $result['author']['photo'] = $representative['properties']['photo'][0];
             } else {
@@ -302,7 +303,7 @@ class Webmentions extends Component
         // Check if webmention for combination of src and target exists
         $model = Webmention::find()
             ->target($target)
-            ->source($src)
+            ->source($source)
             ->one();
 
         if (!$model) {
@@ -318,9 +319,9 @@ class Webmentions extends Component
         $model->name = $result['name'];
         $model->text = $result['text'];
         $model->target = $target;
-        $model->source = $src;
-        $model->url = $result['url'];
-        $model->site = $result['site'];
+        $model->source = $source;
+        $model->hEntryUrl = $result['url'];
+        $model->host = $result['site'];
         $model->type = $result['type'];
 
         return $model;

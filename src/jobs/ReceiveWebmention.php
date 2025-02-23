@@ -11,6 +11,11 @@ class ReceiveWebmention extends BaseJob
     public string $source;
     public string $target;
 
+    protected function defaultDescription(): ?string
+    {
+        return Craft::t('webmention', 'Processing webmention');
+    }
+
     public function execute($queue): void
     {
         // Validate first
