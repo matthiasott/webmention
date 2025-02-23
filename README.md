@@ -50,11 +50,11 @@ By default, Webmentions are sent for all entry types but you can also restrict t
 ### Switching Webmentions on/off for individual entries
 There may be times you want to disable the Webmentions sending functionality on a per-entry basis. This can be accomplished by adding a new “Webmention Switch” field to the field layout of an Entry Type.
 
-![Screenshot showing the creation of a new field](/webmention/resources/screenshot-craft-webmention-create-new-field.jpg?raw=true)
+![Screenshot showing the creation of a new field](screenshot-craft-webmention-create-new-field.jpg?raw=true)
 
 You are now able to switch Webmention sending on or off for individual entries! 
 
-![Screenshot of the new field in the control panel](/webmention/resources/screenshot-craft-webmention-field.jpg?raw=true)
+![Screenshot of the new field in the control panel](screenshot-craft-webmention-field.jpg?raw=true)
 
 **This setting overrides the Entry Type-specific settings from the settings page.** So if you, for example, disable Webmentions for an Entry Type, you can still send them for individual entries by installing the magic switch. ;)
 

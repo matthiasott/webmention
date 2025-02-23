@@ -1,0 +1,44 @@
+{% set settings = plugin('webmention').settings %}
+{% extends settings.layout ?: '_layout' %}
+{% set title = "Webmention Endpoint" %}
+{% block content %}
+  <section class="container">
+    <h1>Webmention Endpoint</h1>
+
+    {% set notice = craft.app.session.getFlash('notice') %}
+    {% if notice %}
+    <div class="callout notice">
+      <p>
+        {{ notice }}
+      </p>
+    </div>
+    {% endif %}
+
+    {% set error = craft.app.session.getFlash('error') %}
+    {% if error %}
+    <div class="callout error">
+      <p>
+        {{ error }}
+      </p>
+    </div>
+    {% endif %}
+
+    <form action="" method="post" class="form">
+      {{ csrfInput() }}
+      <div class="field">
+        <label for="source">Source URL</label>
+        <input id="source" name="source" type="url">
+      </div>
+      <div class="field">
+        <label for="target">Target URL</label>
+        <input id="target" name="target" type="text">
+      </div>
+        <button type="submit" class="button primary">Send Webmention</button>
+    </form>
+    <aside class="b-aside">
+      <h4>About Webmention</h4>
+      <p>Webmention is a modern alternative to pingback. If your site links back to content on my site, your site can send a Webmention for that URL and my site will – after a check – backlink to you.</p>
+      <p>Webmention is part of the <a href="https://indiewebcamp.com/">IndieWeb</a>. You can read more about Webmention <a href="https://indiewebcamp.com/webmention">on the IndieWebCamp wiki.</a></p>
+    </aside>
+  </section>
+{% endblock %}

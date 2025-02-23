@@ -1,0 +1,69 @@
+{
+  "name": "matthiasott/webmention",
+  "description": "Webmention Plugin for Craft CMS",
+  "type": "craft-plugin",
+  "keywords": [
+    "webmention"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Matthias Ott",
+      "email": "mail@matthiasott.com",
+      "homepage": "https://matthiasott.com",
+      "role": "Developer"
+    },
+    {
+      "name": "Brandon Kelly",
+      "email": "brandon@pixelandtonic.com",
+      "homepage": "https://brandonkelly.io",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "mail@matthiasott.com",
+    "issues": "https://github.com/matthiasott/webmention/issues?state=open",
+    "source": "https://github.com/matthiasott/webmention",
+    "docs": "https://github.com/matthiasott/webmention/blob/master/README.md",
+    "rss": "https://github.com/matthiasott/webmention/commits/master.atom"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "ext-dom": "*",
+    "craftcms/cms": "^5.0.0",
+    "mf2/mf2": "^0.5.0",
+    "indieweb/comments": "^0.2.0",
+    "indieweb/representative-h-card": "^0.1.3"
+  },
+  "require-dev": {
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main",
+    "craftcms/rector": "dev-main"
+  },
+  "autoload": {
+    "psr-4": {
+      "matthiasott\\webmention\\": "src/"
+    }
+  },
+  "scripts": {
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix",
+    "phpstan": "phpstan --memory-limit=1G"
+  },
+  "extra": {
+    "name": "Webmention",
+    "handle": "webmention",
+    "description": "Send and receive Webmentions and show them on your site.",
+    "documentationUrl": "https://github.com/matthiasott/webmention/blob/master/README.md"
+  },
+  "config": {
+    "platform": {
+      "php": "8.2"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  }
+}
