@@ -124,40 +124,40 @@ class Sender extends Component
 
     private function _relativeToAbsoluteUrl(string $url, string $base): string
     {
-        /* return if already absolute URL */
+        // return if already absolute URL
         if (parse_url($url, PHP_URL_SCHEME) != '') {
             return $url;
         }
 
-        /* queries and anchors */
+        // queries and anchors
         if ($url[0] == '#' || $url[0] == '?') {
             return $base . $url;
         }
 
-        /* parse base URL and convert to local variables: $scheme, $host, $path */
+        // parse base URL and convert to local variables: $scheme, $host, $path
         $urlInfo = parse_url($base);
         $scheme = $urlInfo['scheme'];
         $host = $urlInfo['host'];
         $path = $urlInfo['path'];
 
-        /* remove non-directory element from path */
+        // remove non-directory element from path
         $path = preg_replace('#/[^/]*$#', '', $path);
 
-        /* destroy path if relative url points to root */
+        // destroy path if relative url points to root
         if ($url[0] == '/') {
             $path = '';
         }
 
-        /* dirty absolute URL */
+        // dirty absolute URL
         $abs = "$host$path/$url";
 
-        /* replace '//' or '/./' or '/foo/../' with '/' */
+        // replace '//' or '/./' or '/foo/../' with '/'
         $re = ['#(/\.?/)#', '#/(?!\.\.)[^/]+/\.\./#'];
 
         for ($n = 1; $n > 0; $abs = preg_replace($re, '/', $abs, -1, $n)) {
         }
 
-        /* absolute URL is ready! */
+        // absolute URL is ready!
         return $scheme . '://' . $abs;
     }
 }

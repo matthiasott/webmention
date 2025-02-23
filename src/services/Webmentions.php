@@ -41,34 +41,34 @@ class Webmentions extends Component
      */
     private function _checkResponseType(array &$result, array $entry, string $src, bool $useBridgy): void
     {
-        /* Check for brid.gy first */
+        // Check for brid.gy first
         if (
             $useBridgy &&
             !empty($src) &&
             (preg_match('!http(.*?)://brid-gy.appspot.com!', $src) || preg_match('!http(.*?)://brid.gy!', $src))
         ) {
-            /* Is it Twitter? */
+            // Is it Twitter?
             if (!empty($result['url']) and preg_match('!http(.*?)://twitter.com/(.*?)/status!', $result['url'])) {
                 $result['site'] = 'twitter';
             }
-            /* Is it The Facebook? */
+            // Is it The Facebook?
             if (!empty($result['url']) and preg_match('!http(.*?)facebook.com!', $result['url'])) {
                 $result['site'] = 'facebook';
             }
-            /* Is it Instagram? */
+            // Is it Instagram?
             if (!empty($result['url']) and preg_match('!http(.*?)instagram.com!', $result['url'])) {
                 $result['site'] = 'instagram';
             }
-            /* Or even G+? */
+            // Or even G+?
             if (!empty($result['url']) and preg_match('!http(.*?)plus.google.com!', $result['url'])) {
                 $result['site'] = 'googleplus';
             }
-            /* Flickr? */
+            // Flickr?
             if (!empty($result['url']) and preg_match('!http(.*?)flickr.com!', $result['url'])) {
                 $result['site'] = 'flickr';
             }
 
-            /* Get the type of mention from brid.gy URL */
+            // Get the type of mention from brid.gy URL
             if (preg_match('/post/', $src)) {
                 $result['type'] = 'mention';
             }
@@ -118,12 +118,12 @@ class Webmentions extends Component
      */
     public function validateWebmention(string $src, string $target): string|false
     {
-        /* Source and target must not match! */
+        // Source and target must not match!
         if ($src === $target) {
             return false;
         }
 
-        /* First check if both source and target are http(s) */
+        // First check if both source and target are http(s)
         if (
             (!str_starts_with($src, 'http://') && !str_starts_with($src, 'https://')) ||
             (!str_starts_with($target, 'http://') && !str_starts_with($target, 'https://'))
@@ -131,7 +131,7 @@ class Webmentions extends Component
             return false;
         }
 
-        /* Get HTML content */
+        // Get HTML content
         $client = Craft::createGuzzleClient();
         try {
             $response = $client->get($src);
@@ -140,7 +140,7 @@ class Webmentions extends Component
         }
         $html = (string)$response->getBody();
 
-        /* and go find a backlink */
+        // and go find a backlink
         $doc = new DOMDocument();
         libxml_use_internal_errors(true); # suppress parse errors and warnings
         $body = mb_convert_encoding($html, 'HTML-ENTITIES', mb_detect_encoding($html));
@@ -189,9 +189,9 @@ class Webmentions extends Component
      */
     public function parseWebmention(string $html, string $src, string $target): Webmention|false
     {
-        /* XSS Protection */
+        // XSS Protection
 
-        /* Decode entities: E.g. converts &#00060script> into <script> */
+        // Decode entities: E.g. converts &#00060script> into <script>
         $convmap = [0x0, 0x2FFFF, 0, 0xFFFF];
         $html = mb_decode_numericentity($html, $convmap, 'UTF-8');
         $html = mb_convert_encoding($html, 'HTML-ENTITIES');
@@ -199,11 +199,12 @@ class Webmentions extends Component
         $html = preg_replace('~(?!.*;$)&#x([0-9a-fA-F]+)~i', "&#x\\1;", $html);
         $html = html_entity_decode($html, ENT_QUOTES, "utf-8");
 
-        /* HTMLPurifier doesn't know HTML5 tags, so we'll replace the structural tags (http://developers.whatwg.org/sections.html) with div tags 
-        This is a working workaround :) */
+        // HTMLPurifier doesn't know HTML5 tags, so we'll replace the structural tags
+        // (http://developers.whatwg.org/sections.html) with div tags
+        // This is a working workaround :)
         $html = preg_replace('/(<|\/)(section|article|nav|aside|hgroup|header|footer|address)(\s|>)/i', '$1div$3', $html);
 
-        /* Purify HTML with Yii's HTMLPurifier wrapper */
+        // Purify HTML with Yii's HTMLPurifier wrapper
         $html = HtmlPurifier::process($html, [
             'URI.AllowedSchemes' => [
                 'http' => true,
@@ -211,10 +212,10 @@ class Webmentions extends Component
             ],
         ]);
 
-        /* Now the HTML is ready to be parsed with Mf2 */
+        // Now the HTML is ready to be parsed with Mf2
         $parsed = Mf2\parse($html, $src);
 
-        /* Let's look up where the h-entry is and use this array */
+        // Let's look up where the h-entry is and use this array
         foreach ($parsed['items'] as $item) {
             if (in_array('h-entry', $item['type']) || in_array('p-entry', $item['type'])) {
                 $entry = $item;
@@ -225,7 +226,7 @@ class Webmentions extends Component
             return false;
         }
 
-        /* Parse comment – with max text length from settings */
+        // Parse comment – with max text length from settings
         $settings = Plugin::getInstance()->settings;
         $maxLength = $settings->maxTextLength;
         $result = \IndieWeb\comments\parse($entry, $src, $maxLength, 100);
@@ -235,17 +236,17 @@ class Webmentions extends Component
             return false;
         }
 
-        /* Determine the type of the response */
+        // Determine the type of the response
         $this->_checkResponseType($result, $entry, $src, $settings->useBridgy);
 
-        /* Get h-card and use data for author etc. if not present in h-entry */
+        // Get h-card and use data for author etc. if not present in h-entry
         $representative = Mf2\HCard\representative($parsed, $src);
 
-        /* If the source url doesn't give us a representative h-card, try to get one for author url from parsed html */
+        // If the source url doesn't give us a representative h-card, try to get one for author url from parsed html
         if ($representative == null) {
             $representative = Mf2\HCard\representative($parsed, $result['author']['url']);
         }
-        /* If this also doesn't work, maybe the h-card can be found in the parsed HTML directly */
+        // If this also doesn't work, maybe the h-card can be found in the parsed HTML directly
         if ($representative == null) {
             foreach ($parsed['items'] as $item) {
                 if (in_array('h-card', $item['type'])) {
@@ -254,27 +255,27 @@ class Webmentions extends Component
             }
         }
 
-        /* If author name is empty use the one from the representative h-card */
+        // If author name is empty use the one from the representative h-card
         if (empty($result['author']['name'])) {
             if ($representative) {
                 $result['author']['name'] = $representative['properties']['name'][0];
             }
         }
-        /* If author url is empty use the one from the representative h-card */
+        // If author url is empty use the one from the representative h-card
         if (empty($result['author']['url'])) {
             if ($representative) {
                 $result['author']['url'] = $representative['properties']['url'][0];
             }
         }
-        /* If url is empty use source url */
+        // If url is empty use source url
         if (empty($result['url'])) {
             $result['url'] = $src;
         }
-        /* Use domain if 'site' ∉ {twitter, facebook, googleplus, instagram, flickr} */
+        // Use domain if 'site' ∉ {twitter, facebook, googleplus, instagram, flickr}
         if (empty($result['site'])) {
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
-        /* If no author photo is defined, check gravatar for image */
+        // If no author photo is defined, check gravatar for image
         if (empty($result['author']['photo'])) {
             if ($representative['properties']['photo'][0]) {
                 $result['author']['photo'] = $representative['properties']['photo'][0];
@@ -288,8 +289,8 @@ class Webmentions extends Component
             }
         }
 
-        /* Author photo should be saved locally to avoid exploits.
-        So if an author photo is available get the image and save it to assets */
+        // Author photo should be saved locally to avoid exploits.
+        // So if an author photo is available get the image and save it to assets
 
         if ($result['author']['photo']) {
             $asset = $this->saveAsset($result['author']['photo']);
@@ -298,18 +299,18 @@ class Webmentions extends Component
             }
         }
 
-        /* Check if webmention for combination of src and target exists */
+        // Check if webmention for combination of src and target exists
         $model = Webmention::find()
             ->target($target)
             ->source($src)
             ->one();
 
         if (!$model) {
-            /* create new webmention */
+            // create new webmention
             $model = new Webmention();
         }
 
-        /* assign attributes */
+        // assign attributes
         $model->authorName = $result['author']['name'];
         $model->authorPhoto = $result['author']['photo'];
         $model->authorUrl = $result['author']['url'];
@@ -337,7 +338,7 @@ class Webmentions extends Component
             throw new InvalidConfigException("Invalid volume handle: $settings->avatarVolume");
         }
 
-        /* get remote image and store in temp path with a hashed filename */
+        // get remote image and store in temp path with a hashed filename
         $client = Craft::createGuzzleClient();
         try {
             $response = $client->get($url);
@@ -351,22 +352,22 @@ class Webmentions extends Component
         $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), $fileName);
         FileHelper::writeToFile($fileName, (string)$response->getBody());
 
-        /* If it's an image, cleanse it of any malicious scripts that may be embedded */
-        /* (recommended unless you completely trust everyone that’s uploading images) */
+        // If it's an image, cleanse it of any malicious scripts that may be embedded
+        // (recommended unless you completely trust everyone that’s uploading images)
         $ext = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
         if (Image::canManipulateAsImage($ext) && $ext !== 'svg') {
             Craft::$app->images->cleanImage($tempPath);
         }
 
-        /* Find the target folder */
+        // Find the target folder
         $avatarFolder = $settings->avatarPath;
-        /* Add trailing slash */
+        // Add trailing slash
         if (substr($avatarFolder, -1) != "/") {
             $avatarFolder = $avatarFolder . "/";
         }
         $folder = Craft::$app->assets->ensureFolderByFullPathAndVolume($avatarFolder, $volume);
 
-        /* Save avatar to asset folder */
+        // Save avatar to asset folder
         $asset = new Asset();
         $asset->tempFilePath = $tempPath;
         $asset->newFilename = $fileName;
