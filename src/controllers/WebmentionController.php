@@ -2,8 +2,6 @@
 
 namespace matthiasott\webmention\controllers;
 
-use Craft;
-use craft\errors\InvalidElementException;
 use craft\helpers\Queue;
 use craft\web\Controller;
 use matthiasott\webmention\jobs\ReceiveWebmention;

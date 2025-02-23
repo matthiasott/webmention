@@ -16,9 +16,7 @@ use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\models\Settings;
-use matthiasott\webmention\services\Webmention_InstallService;
 use matthiasott\webmention\services\Sender;
-use matthiasott\webmention\services\Webmention_UninstallService;
 use matthiasott\webmention\services\Webmentions;
 use matthiasott\webmention\variables\WebmentionVariable;
 use yii\base\Event as YiiEvent;
@@ -70,7 +68,7 @@ class Plugin extends BasePlugin
 
         Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_SITE_URL_RULES, function(RegisterUrlRulesEvent $event) {
             $event->rules += [
-                $this->settings->endpointSlug => 'webmention/webmention/handle-request'
+                $this->settings->endpointSlug => 'webmention/webmention/handle-request',
             ];
         });
 

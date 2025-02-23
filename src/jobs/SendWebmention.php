@@ -1,4 +1,5 @@
 <?php
+
 namespace matthiasott\webmention\jobs;
 
 use Craft;

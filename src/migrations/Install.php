@@ -1,4 +1,5 @@
 <?php
+
 namespace matthiasott\webmention\migrations;
 
 use craft\db\Migration;

@@ -1,4 +1,5 @@
 <?php
+
 namespace matthiasott\webmention\elements\db;
 
 use craft\elements\db\ElementQuery;
