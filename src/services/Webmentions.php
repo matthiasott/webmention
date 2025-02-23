@@ -471,7 +471,7 @@ class Webmentions extends Component
         $this->extractTargets($entry->getSerializedFieldValues(), $targets);
 
         // Add all targets to the queue
-        foreach ($targets as $target) {
+        foreach (array_keys($targets) as $target) {
             Queue::push(new SendWebmention([
                 'source' => $url,
                 'target' => $target,

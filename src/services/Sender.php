@@ -13,7 +13,7 @@ namespace matthiasott\webmention\services;
 
 use Craft;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use yii\base\Component;
 
@@ -52,7 +52,7 @@ class Sender extends Component
                     'target' => $target,
                 ],
             ]);
-        } catch (RequestException) {
+        } catch (GuzzleException) {
             return false;
         }
 
@@ -64,7 +64,7 @@ class Sender extends Component
         try {
             $endpoint = $this->_findEndpointInHeaders($target)
                 ?? $this->_findEndpointInBody($target);
-        } catch (RequestException) {
+        } catch (GuzzleException) {
             return false;
         }
 
