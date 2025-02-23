@@ -1,7 +1,9 @@
-{% set settings = plugin('webmention').settings %}
-{% extends settings.layout ?: '_layout' %}
-{% set title = "Webmention Endpoint" %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en-US" class="h-full">
+<head>
+  <title>Webmention Endpoint</title>
+</head>
+<body>
   <section class="container">
     <h1>Webmention Endpoint</h1>
 
@@ -41,4 +43,5 @@
       <p>Webmention is part of the <a href="https://indiewebcamp.com/">IndieWeb</a>. You can read more about Webmention <a href="https://indiewebcamp.com/webmention">on the IndieWebCamp wiki.</a></p>
     </aside>
   </section>
-{% endblock %}
+</body>
+</html>

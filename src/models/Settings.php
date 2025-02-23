@@ -7,7 +7,6 @@ use craft\base\Model;
 
 class Settings extends Model
 {
-    public string $layout = '_layout';
     public string $endpointSlug = 'webmention';
     public int $maxTextLength = 420;
     public bool $useBridgy = true;
