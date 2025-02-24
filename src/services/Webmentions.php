@@ -189,21 +189,6 @@ class Webmentions extends Component
      */
     public function parseWebmention(string $html, string $source, string $target): Webmention|false
     {
-        // XSS Protection
-
-        // Decode entities: E.g. converts &#00060script> into <script>
-        $convmap = [0x0, 0x2FFFF, 0, 0xFFFF];
-        $html = mb_decode_numericentity($html, $convmap, 'UTF-8');
-        $html = mb_convert_encoding($html, 'HTML-ENTITIES');
-        $html = htmlspecialchars_decode($html);
-        $html = preg_replace('~(?!.*;$)&#x([0-9a-fA-F]+)~i', "&#x\\1;", $html);
-        $html = html_entity_decode($html, ENT_QUOTES, "utf-8");
-
-        // HTMLPurifier doesn't know HTML5 tags, so we'll replace the structural tags
-        // (http://developers.whatwg.org/sections.html) with div tags
-        // This is a working workaround :)
-        $html = preg_replace('/(<|\/)(section|article|nav|aside|hgroup|header|footer|address)(\s|>)/i', '$1div$3', $html);
-
         // Purify HTML with Yii's HTMLPurifier wrapper
         $html = HtmlPurifier::process($html, [
             'URI.AllowedSchemes' => [
