@@ -7,7 +7,7 @@ use craft\db\Migration;
 use craft\services\ProjectConfig;
 use Illuminate\Support\Arr;
 use matthiasott\webmention\fields\WebmentionSwitch;
-use matthiasott\webmention\records\Webmention;
+use matthiasott\webmention\records\Webmention as WebmentionRecord;
 
 /**
  * m250223_232750_db_changes migration.
@@ -20,7 +20,7 @@ class m250223_232750_db_changes extends Migration
     public function safeUp(): bool
     {
         $oldTable = '{{%webmention_webmention}}';
-        $newTable = Webmention::tableName();
+        $newTable = WebmentionRecord::tableName();
 
         // Rename the table
         if ($this->db->tableExists($oldTable)) {
