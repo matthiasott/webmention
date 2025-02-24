@@ -1,5 +1,44 @@
 {% import "_includes/forms" as forms %}
 
+{% set hasVolumes = craft.app.volumes.getAllVolumes|length != 0 %}
+{% set avatarVolume = settings.avatarVolume ? craft.app.volumes.getVolumeByUid(settings.avatarVolume) : null %}
+
+{% set allVolumes = craft.app.volumes.getAllVolumes() %}
+{% set volumeList = [] %}
+{% set validVolumeUids = [] %}
+
+{% for volume in allVolumes %}
+  {% if volume.getTransformFs().hasUrls %}
+    {% set volumeList = volumeList|push({label: volume.name, value: volume.uid}) %}
+    {% set validVolumeUids = validVolumeUids|push(volume.uid) %}
+  {% endif %}
+{% endfor %}
+
+{% macro assetLocationInput(volumeOptions, volume, path, disabled) %}
+  {% import '_includes/forms' as forms %}
+  <div class="flex">
+    <div>
+      {{ forms.volume({
+        id: 'avatarVolume',
+        name: 'avatarVolume',
+        options: volumeOptions,
+        value: volume.id ?? null,
+        disabled: disabled,
+      }) }}
+    </div>
+    <div class="flex-grow">
+      {{ forms.text({
+        id: 'avatarPath',
+        class: 'ltr',
+        name: 'avatarPath',
+        value: path,
+        placeholder: "path/to/subfolder"|t('app'),
+        disabled: disabled,
+      }) }}
+    </div>
+  </div>
+{% endmacro %}
+
 {{ forms.textField({
   label: 'Webmention Endpoint Route (Slug)',
   instructions: 'Set the URL slug / route of your Webmention endpoint here. Defaults to "webmention", but you can insert anything that makes sense to you…',
@@ -25,13 +64,21 @@
   on: settings.useBridgy,
 }) }}
 
-{{ forms.textField({
-  label: 'Avatar Storage Folder',
-  instructions: 'This plugin saves user photos (avatars) for incoming Webmentions to avoid exploits. Set the name of the folder where user avatars will be stored. \<br\>\<strong\>Note: For now, this will create a new subfolder in your default assets folder. So there has to be at least one asset source defined! \;\) \<\/strong\>\<br\> Also, if you change this name, avatars that have been stored before won\'t be moved to the new path.',
-  id: 'avatarPath',
-  name: 'avatarPath',
-  value: settings.avatarPath,
-}) }}
+{% if hasVolumes %}
+  {% set volumeOptions = craft.cp.getVolumeOptions() %}
+  {%  if not avatarVolume %}
+    {% set volumeOptions = volumeOptions|unshift({label: 'Select a volume'|t('app'), value: null}) %}
+  {%  endif %}
+
+  {{ forms.field({
+    label: 'Avatar Location',
+    instructions: 'This plugin saves user photos (avatars) for incoming Webmentions to avoid exploits. Choose the volume where user avatars will be stored.',
+  }, _self.assetLocationInput(volumeOptions, avatarVolume, settings.avatarPath, readOnly)) }}
+{% else %}
+  {{ forms.field({
+    label: 'Avatar Location',
+  }, '<p class="error">' ~ 'No volumes exist yet.'|t('app') ~ '</p>') }}
+{% endif %}
 
 <div class="field" id="settings-layout-field">
   <div class="heading">

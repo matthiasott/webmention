@@ -4,6 +4,7 @@ namespace matthiasott\webmention\models;
 
 use Craft;
 use craft\base\Model;
+use craft\helpers\StringHelper;
 
 class Settings extends Model
 {
@@ -28,5 +29,18 @@ class Settings extends Model
                 ];
             }
         }
+    }
+
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        if (!empty($values['avatarVolume']) && !StringHelper::isUUID($values['avatarVolume'])) {
+            if (is_numeric($values['avatarVolume'])) {
+                $volume = Craft::$app->volumes->getVolumeById($values['avatarVolume']);
+            } else {
+                $volume = Craft::$app->volumes->getVolumeByHandle($values['avatarVolume']);
+            }
+            $values['avatarVolume'] = $volume?->uid;
+        }
+        parent::setAttributes($values, $safeOnly);
     }
 }

@@ -107,6 +107,7 @@ class Plugin extends BasePlugin
     {
         return Craft::$app->getView()->renderTemplate('webmention/_settings.twig', [
             'settings' => $this->settings,
+            'readOnly' => !Craft::$app->config->general->allowAdminChanges,
         ]);
     }
 }

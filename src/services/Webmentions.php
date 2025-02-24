@@ -10,6 +10,7 @@ use craft\helpers\FileHelper;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
 use craft\helpers\Queue;
+use craft\models\VolumeFolder;
 use DateTime;
 use DOMDocument;
 use DOMElement;
@@ -329,14 +330,9 @@ class Webmentions extends Component
 
     private function saveAsset(string $url): ?Asset
     {
-        $settings = Plugin::getInstance()->settings;
-        if (!$settings->avatarVolume) {
+        $folder = $this->getAvatarFolder();
+        if (!$folder) {
             return null;
-        }
-
-        $volume = Craft::$app->volumes->getVolumeByHandle($settings->avatarVolume);
-        if (!$volume) {
-            throw new InvalidConfigException("Invalid volume handle: $settings->avatarVolume");
         }
 
         // get remote image and store in temp path with a hashed filename
@@ -360,14 +356,6 @@ class Webmentions extends Component
             Craft::$app->images->cleanImage($tempPath);
         }
 
-        // Find the target folder
-        $avatarFolder = $settings->avatarPath;
-        // Add trailing slash
-        if (substr($avatarFolder, -1) != "/") {
-            $avatarFolder = $avatarFolder . "/";
-        }
-        $folder = Craft::$app->assets->ensureFolderByFullPathAndVolume($avatarFolder, $volume);
-
         // Save avatar to asset folder
         $asset = new Asset();
         $asset->tempFilePath = $tempPath;
@@ -381,6 +369,32 @@ class Webmentions extends Component
         }
 
         return $asset;
+    }
+
+    /**
+     * Returns the volume folder used to store avatars.
+     *
+     * @return VolumeFolder|null
+     * @throws InvalidConfigException if the `avatarVolume` setting is set to an invalid volume handle
+     */
+    public function getAvatarFolder(): ?VolumeFolder
+    {
+        $settings = Plugin::getInstance()->settings;
+        if (!$settings->avatarVolume) {
+            return null;
+        }
+
+        $volume = Craft::$app->volumes->getVolumeByUid($settings->avatarVolume);
+        if (!$volume) {
+            throw new InvalidConfigException("Invalid volume UUID: $settings->avatarVolume");
+        }
+
+        $avatarPath = trim($settings->avatarPath, '/\\');
+        if ($avatarPath === '') {
+            return Craft::$app->assets->getRootFolderByVolumeId($volume->id);
+        }
+
+        return Craft::$app->assets->ensureFolderByFullPathAndVolume($avatarPath, $volume);
     }
 
     /**
