@@ -36,7 +36,7 @@ class m250224_175749_elementize extends Migration
         ]);
 
         // fetch the rows that are missing a corresponding row in the `elements` table
-        $idsQuery = (new Query())
+        $query = (new Query())
             ->select(['w.oldId', 'w.dateCreated', 'w.dateUpdated', 'w.uid'])
             ->from(['w' => $table])
             ->leftJoin(['e' => $table], [
@@ -49,7 +49,7 @@ class m250224_175749_elementize extends Migration
         // go through them and add element rows
         $siteId = Craft::$app->getSites()->getPrimarySite()->id;
 
-        foreach (Db::batch($idsQuery) as $rows) {
+        foreach (Db::batch($query) as $rows) {
             $elementSitesData = [];
             foreach ($rows as $row) {
                 $this->insert(Table::ELEMENTS, [
