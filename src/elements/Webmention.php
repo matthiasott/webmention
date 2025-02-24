@@ -4,6 +4,9 @@ namespace matthiasott\webmention\elements;
 
 use Craft;
 use craft\base\Element;
+use craft\base\ElementInterface;
+use craft\db\Query;
+use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
 use craft\helpers\Db;
@@ -15,6 +18,9 @@ use yii\base\InvalidConfigException;
 
 /**
  * Webmention - Webmention element type
+ *
+ * @property Asset|null $avatar
+ * @property-read string|null $authorPhoto
  */
 class Webmention extends Element
 {
@@ -53,7 +59,7 @@ class Webmention extends Element
     }
 
     public ?string $authorName = null;
-    public ?string $authorPhoto = null;
+    public ?int $avatarId = null;
     public ?string $authorUrl = null;
     public ?DateTime $published = null;
     public ?string $name = null;
@@ -65,14 +71,56 @@ class Webmention extends Element
     public ?string $type = null;
     public ?string $rsvp = null;
 
+    private Asset|null|false $_avatar = null;
+
     protected function attributeHtml(string $attribute): string
     {
-        return (string)match ($attribute) {
+        return (string) match ($attribute) {
             'authorName' => Html::tag('strong', $this->$attribute),
             'text' => $this->$attribute,
             'target' => Html::a($this->$attribute, $this->$attribute),
             default => parent::attributeHtml($attribute),
         };
+    }
+
+    /**
+     * Returns the avatar
+     *
+     * @return Asset|null
+     */
+    public function getAvatar(): ?Asset
+    {
+        if (!isset($this->_avatar)) {
+            if (!$this->avatarId) {
+                return null;
+            }
+
+            $this->_avatar = Craft::$app->getAssets()->getAssetById($this->avatarId) ?? false;
+        }
+
+        return $this->_avatar ?: null;
+    }
+
+    /**
+     * Sets the entry’s author.
+     *
+     * @param Asset|null $avatar
+     */
+    public function setAvatar(?Asset $avatar = null): void
+    {
+        $this->_avatar = $avatar;
+        $this->avatarId = $avatar->id ?? null;
+    }
+
+    /**
+     * Returns the avatar URL.
+     *
+     * @return string|null
+     * @deprecated
+     */
+    public function getAuthorPhoto(): ?string
+    {
+        return $this->getAvatar()?->url;
     }
 
     public function canView(User $user): bool
@@ -103,7 +151,7 @@ class Webmention extends Element
         }
 
         $record->authorName = $this->authorName;
-        $record->authorPhoto = $this->authorPhoto;
+        $record->avatarId = $this->avatarId;
         $record->authorUrl = $this->authorUrl;
         $record->published = Db::prepareDateForDb($this->published);
         $record->name = $this->name;
@@ -122,5 +170,28 @@ class Webmention extends Element
         $this->setDirtyAttributes($dirtyAttributes);
 
         parent::afterSave($isNew);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function eagerLoadingMap(array $sourceElements, string $handle): array|null|false
+    {
+        if ($handle === 'avatar') {
+            $sourceElementIds = array_map(fn(ElementInterface $element) => $element->id, $sourceElements);
+            $map = (new Query())
+                ->select(['id as source', 'avatarId as target'])
+                ->from(WebmentionRecord::tableName())
+                ->where(['id' => $sourceElementIds])
+                ->andWhere(['not', ['avatarId' => null]])
+                ->all();
+
+            return [
+                'elementType' => Asset::class,
+                'map' => $map,
+            ];
+        }
+
+        return parent::eagerLoadingMap($sourceElements, $handle);
     }
 }

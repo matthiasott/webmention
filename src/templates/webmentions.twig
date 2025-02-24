@@ -10,9 +10,9 @@
       {% if (block.type == "mention") or (block.type == "comment") %}
         <article class="webmention webmention-{{ block.type }} p-comment h-cite">
           <figure class="p-author h-card">
-            {% if block.authorPhoto %}
+            {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
                      alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
@@ -52,9 +52,9 @@
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
           <figure class="p-author h-card">
-            {% if block.authorPhoto %}
+            {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
                      alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
@@ -82,9 +82,9 @@
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
           <figure class="p-author h-card">
-            {% if block.authorPhoto %}
+            {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.authorPhoto }}"
+                <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
                      alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}

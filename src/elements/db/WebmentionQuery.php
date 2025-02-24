@@ -14,7 +14,6 @@ use matthiasott\webmention\elements\Webmention;
 class WebmentionQuery extends ElementQuery
 {
     public mixed $authorName = null;
-    public mixed $authorPhoto = null;
     public mixed $authorUrl = null;
     public mixed $published = null;
     public mixed $name = null;
@@ -29,12 +28,6 @@ class WebmentionQuery extends ElementQuery
     public function authorName(mixed $value): static
     {
         $this->authorName = $value;
-        return $this;
-    }
-
-    public function authorPhoto(mixed $value): static
-    {
-        $this->authorPhoto = $value;
         return $this;
     }
 
@@ -108,7 +101,7 @@ class WebmentionQuery extends ElementQuery
 
         $this->query->addSelect([
             'webmentions.authorName',
-            'webmentions.authorPhoto',
+            'webmentions.avatarId',
             'webmentions.authorUrl',
             'webmentions.published',
             'webmentions.name',
@@ -123,10 +116,6 @@ class WebmentionQuery extends ElementQuery
 
         if ($this->authorName) {
             $this->subQuery->andWhere(Db::parseParam('webmentions.authorName', $this->authorName));
-        }
-
-        if ($this->authorPhoto) {
-            $this->subQuery->andWhere(Db::parseParam('webmentions.authorPhoto', $this->authorPhoto));
         }
 
         if ($this->authorUrl) {

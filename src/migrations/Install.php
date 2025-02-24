@@ -17,7 +17,8 @@ class Install extends Migration
             'id' => $this->integer()->notNull(),
             'source' => $this->string(),
             'target' => $this->string(),
-            'authorPhoto' => $this->string(),
+            'avatarId' => $this->integer(),
+            'avatarUrl' => $this->string(),
             'authorName' => $this->string(),
             'authorUrl' => $this->string(),
             'published' => $this->dateTime(),
@@ -32,6 +33,7 @@ class Install extends Migration
 
         $this->createIndex(null, $tableName, ['target', 'source'], false);
         $this->addForeignKey(null, $tableName, ['id'], Table::ELEMENTS, ['id'], 'CASCADE', null);
+        $this->addForeignKey(null, $tableName, ['avatarId'], Table::ASSETS, ['id'], 'SET NULL', null);
 
         return true;
     }

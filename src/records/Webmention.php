@@ -14,7 +14,7 @@ use craft\db\ActiveRecord;
  *
  * @property int $id ID
  * @property string|null $authorName
- * @property string|null $authorPhoto
+ * @property int|null $avatarId
  * @property string|null $authorUrl
  * @property string|null $published
  * @property string|null $name

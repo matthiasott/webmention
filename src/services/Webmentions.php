@@ -297,7 +297,7 @@ class Webmentions extends Component
         if ($result['author']['photo']) {
             $asset = $this->saveAsset($result['author']['photo']);
             if ($asset) {
-                $result['author']['photo'] = $asset->getUrl();
+                $result['author']['avatarId'] = $asset->id;
             }
         }
 
@@ -314,7 +314,7 @@ class Webmentions extends Component
 
         // assign attributes
         $model->authorName = $result['author']['name'];
-        $model->authorPhoto = $result['author']['photo'];
+        $model->avatarId = $result['author']['avatarId'] ?? null;
         $model->authorUrl = $result['author']['url'];
         $model->published = new DateTime($result['published']);
         $model->name = $result['name'];
