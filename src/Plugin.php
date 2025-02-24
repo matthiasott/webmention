@@ -84,6 +84,14 @@ class Plugin extends BasePlugin
         });
     }
 
+    public function getCpNavItem(): ?array
+    {
+        return [
+            ...parent::getCpNavItem(),
+            'label' => Craft::t('webmention', 'Webmentions'),
+        ];
+    }
+
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
