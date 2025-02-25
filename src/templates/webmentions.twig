@@ -1,6 +1,6 @@
 <section class="webmentions container">
   {% set element = craft.app.urlManager.getMatchedElement() %}
-  {% set mentions = element ? craft.webmention.getWebmentionsForElement(element) : craft.webmention.getWebmentionsForUrl(url) %}
+  {% set mentions = element ? craft.webmention.getWebmentionsForElement(element) : craft.webmention.getWebmentions(url) %}
   {% set nummentions = mentions|length %}
   {% set likescounter = 0 %}
   {% set repostscounter = 0 %}

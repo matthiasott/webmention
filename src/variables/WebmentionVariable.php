@@ -19,26 +19,26 @@ class WebmentionVariable
     /**
      * Gets all available webmentions for a URL
      *
-     * @param string $url
+     * @param string|null $url
      * @return Webmention[]
      */
-    public function getWebmentionsForUrl(string $url): array
+    public function getWebmentions(?string $url = null): array
     {
         return Webmention::find()
-            ->target($url)
+            ->target($url ?? Craft::$app->request->getAbsoluteUrl())
             ->all();
     }
 
     /**
      * Gets all available webmentions for an entry
      *
-     * @param string $url
+     * @param string|null $url
      * @return Webmention[]
      * @deprecated
      */
-    public function getAllWebmentionsForEntry(string $url): array
+    public function getAllWebmentionsForEntry(?string $url = null): array
     {
-        return $this->getWebmentionsForUrl($url);
+        return $this->getWebmentions($url);
     }
 
     /**
@@ -73,19 +73,19 @@ class WebmentionVariable
         return UrlHelper::siteUrl(Plugin::getInstance()->settings->endpointSlug);
     }
 
-    public function showWebmentions(string $url): Markup
+    public function showWebmentions(?string $url = null): Markup
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmentions.twig', [
-            'url' => $url,
+            'url' => $url ?? Craft::$app->request->getAbsoluteUrl(),
         ], View::TEMPLATE_MODE_CP);
 
         return Template::raw($html);
     }
 
-    public function webmentionForm(string $url)
+    public function webmentionForm(?string $url = null)
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmention-form.twig', [
-            'url' => $url,
+            'url' => $url ?? Craft::$app->request->getAbsoluteUrl(),
         ], View::TEMPLATE_MODE_CP);
 
         return Template::raw($html);
