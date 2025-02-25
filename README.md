@@ -1,27 +1,50 @@
-# Webmention Plugin for Craft CMS
+<p align="center"><img src="./src/icon.svg" width="100" height="100" alt="CKEditor icon"></p>
+
+<h1 align="center">Webmention for Craft CMS</h1>
 
 This plugin provides a [Webmention](https://www.w3.org/TR/webmention/) endpoint for [Craft CMS](https://craftcms.com) and allows for sending Webmentions to other sites.
 
+**Table of Contents:**
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Receiving Webmentions: The Webmention endpoint](#receiving-webmentions-the-webmention-endpoint)
+- [Sending Webmentions](#sending-webmentions)
+- [Craft Plugin Settings](#craft-plugin-settings)
+- [Features](#features)
+- [Roadmap](#roadmap)
+- [Updating from v0.3](#updating-from-v03)
+- [Thank You!](#thank-you)
+- [License](#license)
+- [Author](#author)
+
+## Requirements
+This plugin requires Craft CMS 5.6.10 or later.
+
 ## Installation
+You can install this plugin from Craft’s in-app Plugin Store.
 
-1. Download & unzip the file and place the `webmention/` directory into your `craft/plugins/` directory.
-2.  -OR- do a `git clone https://github.com/matthiasott/webmention.git` directly into your `craft/plugins` folder.  You can then update it with `git pull`.
-3. In the Craft Control Panel go to Settings > Plugins and click the “Install” button next to “Webmention”.
+Go to the Plugin Store in your project’s Control Panel and search for “Webmention”, then click on the “Install” button in the sidebar.
 
+After installing, run the following CLI command to copy an example webmention submission template into your project’s `templates/` directory:
 
-## Configuration
+```sh
+php craft webmention/example-template
+```
 
+> [!NOTE]  
+> If you’re updating from Webmention v0.3, [follow these instructions](#updating-from-v03) as well.
 
 ## Receiving Webmentions: The Webmention endpoint
 In order to receive Webmentions, the Webmention endpoint of your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the `<head>` section of your main layout template:
 
-```
+```twig
 <link rel="webmention" href="{{ craft.webmention.endpointUrl }}" />
 ```
 
 And/or you can set an HTTP Link header by adding this line to your main layout template:
 
-```
+```twig
 {% header "Link: <" ~ craft.webmention.endpointUrl ~ ">; rel=\"webmention\"" %}
 ```
 
@@ -30,15 +53,35 @@ The plugin comes with a „human-friendly“ endpoint that will present a form w
 ### Displaying Webmentions
 To output all Webmentions for the current request URL, you can use the following helper in your templates:
 
+```twig
+{{ craft.webmention.showWebmentions() }}
 ```
-{{ craft.webmention.showWebmentions(craft.request.url) }}
+
+If you want full control over the HTML output for Webmentions, you can fetch all Webmentions for the current URL:
+
+```twig
+{% for webmention in craft.webmention.getWebmentions() %}
+  <li>
+    <a href="{{ webmention.source }}">{{ webmention.authorName }}</a>:
+    {{ webmention.text }}
+  </li>
+{% endfor %}
+```
+
+To fetch all Webmentions for an element, you can call `getWebmentions()` on the element:
+
+```twig
+{% for webmention in entry.getWebmentions() %}
+  …
+{% endfor %}
 ```
 
 ### Display a Webmention form for the current URL
 You can output a form in your entry template that provides the user with the opportunity to send you the URL of a response.
 Simply use this helper:
-```
-{{ craft.webmention.webmentionForm(craft.request.url) }}
+
+```twig
+{{ craft.webmention.webmentionForm() }}
 ```
 
 ## Sending Webmentions
@@ -50,37 +93,36 @@ By default, Webmentions are sent for all entry types but you can also restrict t
 ### Switching Webmentions on/off for individual entries
 There may be times you want to disable the Webmentions sending functionality on a per-entry basis. This can be accomplished by adding a new “Webmention Switch” field to the field layout of an Entry Type.
 
-![Screenshot showing the creation of a new field](screenshot-craft-webmention-create-new-field.jpg?raw=true)
+![Screenshot showing the creation of a new field](screenshots/field-settings.png)
 
 You are now able to switch Webmention sending on or off for individual entries! 
 
-![Screenshot of the new field in the control panel](screenshot-craft-webmention-field.jpg?raw=true)
+![Screenshot of the new field in the control panel](screenshots/field.png)
 
 **This setting overrides the Entry Type-specific settings from the settings page.** So if you, for example, disable Webmentions for an Entry Type, you can still send them for individual entries by installing the magic switch. ;)
 
 ## Craft Plugin Settings
 
-The Webmention plugin comes with a settings page for the Craft backend. You can change the following options:
+Webmention settings can be accessed from **Settings** → **Webmention**.
+
+![Screenshot showing the Webmention plugin settings](screenshots/plugin-settings.png)
+
+You can change the following options:
 
 * **Webmention Endpoint Route (Slug)**    
 Set the URL slug of your Webmention endpoint. Defaults to `webmention`, but you can insert anything that makes sense to you.
 
-* **Webmention Endpoint Layout Template**    
-The Twig template for the Webmention endpoint will extend your standard template. Tell the plugin which template to use. Default is `_layout`.
-
 * **Maximum Length of Webmention Text**    
-Set the maximum character count for summaries, comments and text excerpts from posts. Default: `420`
+  Set the maximum character count for summaries, comments and text excerpts from posts. Default: `420`
 
 * **Parse Brid.gy Webmentions**    
 Toggle if you want the plugin to parse [Brid.gy](https://brid.gy) Webmentions.
 
-* **Avatar Storage Folder**     
-The plugin saves user photos (avatars) for incoming Webmentions for better performance and to avoid exploits. You can set the name of the folder where user avatars will be stored. 
-*Note: For now, this will create a new subfolder in your default assets folder. So there has to be at least one asset source defined! ;)*
-Also, if you change this value, avatars that have been stored before won't be moved to the new path.
+* **Avatar Location**     
+The plugin saves user photos (avatars) for incoming Webmentions for better performance and to avoid exploits. You can set the volume and subfolder path where user avatars will be stored.
 
-* **Sections and Entry Types**    
-Lets you select all Sections and Entry Types for which you want to send Webmentions. When new sections or Entry Types are added, they are set to “send Webmentions” by default.
+* **Entry Types**    
+Lets you select all entry types for which you want to send Webmentions. When new entry types are added, they are set to “send Webmentions” by default.
 
 ## Features
 
@@ -90,16 +132,16 @@ When the plugin receives a Webmention, it performs several checks and then parse
 
 The following attributes are looked up:  
 
-* `author_name`
-* `author_photo`
-* `author_url`
+* `authorName`
+* `authorPhoto`
+* `authorUrl`
 * `published`
 * `name`
 * `text`
 * `target`
 * `source`
-* `url`
-* `site`
+* `hEntryUrl`
+* `host`
 * `type`
 
 Lastly, the Webmention record is saved to the database. Already existing Webmentions (which is determined by a comparison of the `source` and `target` of the POST request) are updated in the database.
@@ -124,33 +166,43 @@ The Webmention plugin validates and processes the request and then returns HTTP 
 
 **Note: Currently, the plugin does not process the Webmention verification asynchronously.**
 
-## Changelog
-
-### 0.3.1
-
-- Changed the retrieval method for links within an entry to fix a bug where a very long article with many links would lead to a PHP execution timeout
-- Minor bugfixes and improvements
-
-### 0.3.0
-
-- Webmention sending functionality implemented
-- Setting added: Entry Types (for Webmention sending)
-- New “Webmention Switch” field type
-
-### 0.2.0
-
-- Webmentions are now stored as Craft elements (ElementType: `Webmention_webmention`)
-- Improved backend functionality: Webmentions are displayed under the tab *Webmentions* and can be deleted
-- The plugin now sets the `type` property of an incoming Webmention correctly, based on the [Microformats](http://microformats.org/wiki/h-entry) properties `u-like-of`, `u-like`, `u-repost-of`, and `u-repost`.
-
-### 0.1.0
-
-- First version
-
 ## Roadmap
-- Process Webmentions asynchronously
 - Provide an easy way to change how Webmentions are displayed (e. g. grouping y/n)
 - …
+
+## Updating from v0.3
+To update from Webmention 0.3 on Craft 2, do the following after upgrading Craft CMS:
+
+1. Follow the [installation instructions](#installation).
+2. Go to **Settings** → **Webmention** and select the volume that avatars are stored in, from the **Avatar Location** setting.
+3. Run the following CLI command to update your existing webmentions’ avatar relations:
+   ```sh
+   php craft webmention/update-avatars
+   ```
+4. Run the following CLI command to update search indexes for existing webmentions:
+   ```sh
+   php craft resave/webmentions --update-search-index
+   ```
+5. Update your templates based on the following changes:
+
+   Old | New
+   -------- | --------
+   `webmention.author_name` | `webmention.authorName`
+   `webmention.author_url` | `webmention.authorUrl`
+   `webmention.author_photo` | `webmention.avatar.getUrl()`
+   `webmention.url` | `webmention.hEntryUrl`
+   `webmention.site` | `webmention.host`
+   `craft.webmention.getAllWebmentionsForEntry(craft.request.url)` | `craft.webmention.getWebmentions()`
+   `craft.webmention.showWebmentions(craft.request.url)` | `craft.webmention.showWebmentions()`
+   `craft.webmention.webmentionForm(craft.request.url)` | `craft.webmention.webmentionForm()`
+
+
+> [!NOTE]  
+> If you have any webmentions which contain double-encoded HTML entities, you can update them via the “Update” action in the UI, or with the following command:
+>
+> ```sh
+> php craft webmention/update --webmention-id=123
+> ```
 
 ## Thank You!
 Thanks to everyone who helped me setting this up:
@@ -161,7 +213,7 @@ Thanks to everyone who helped me setting this up:
 - [Jeremy Keith](https://adactio.com) (@adactio) for the feedback and also for giving the initial spark.
 - Everyone at the IndieWebCamps Düsseldorf and Berlin 2016 and in the IndieWeb Community!
 
-## License 
+## License
 
 Code released under [the MIT license](https://github.com/matthiasott/webmention/LICENSE).
 
