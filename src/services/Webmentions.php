@@ -22,6 +22,7 @@ use DOMXPath;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Collection;
+use LitEmoji\LitEmoji;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\jobs\SendWebmention;
@@ -322,19 +323,22 @@ class Webmentions extends Component
             $model = new Webmention();
         }
 
+        // Purify the text with Yii's HTMLPurifier wrapper
+        $text = LitEmoji::encodeUnicode($result['text']);
+        $text = HtmlPurifier::process($text, [
+            'URI.AllowedSchemes' => [
+                'http' => true,
+                'https' => true,
+            ],
+        ]);
+
         // assign attributes
         $model->authorName = Html::encode($result['author']['name']);
         $model->avatarId = $result['author']['avatarId'] ?? null;
         $model->authorUrl = Html::encode($result['author']['url']);
         $model->published = new DateTime($result['published']);
         $model->name = Html::encode($result['name']);
-        // Purify the text with Yii's HTMLPurifier wrapper
-        $model->text = HtmlPurifier::process($result['text'], [
-            'URI.AllowedSchemes' => [
-                'http' => true,
-                'https' => true,
-            ],
-        ]);
+        $model->text = $text;
         $model->target = Html::encode($target);
         $model->targetId = $targetElement?->id;
         $model->targetSiteId = $targetElement && $targetElement->isLocalized() ? $targetElement->siteId : null;
