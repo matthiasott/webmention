@@ -9,6 +9,7 @@ use craft\db\Query;
 use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
+use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use DateTime;
@@ -50,11 +51,22 @@ class Webmention extends Element
     protected static function defineTableAttributes(): array
     {
         return [
-            ...parent::defineTableAttributes(),
             'authorName' => Craft::t('webmention', 'Author'),
             'text' => Craft::t('webmention', 'Text'),
+            'source' => Craft::t('webmention', 'Source'),
             'target' => Craft::t('webmention', 'Target'),
             'type' => Craft::t('webmention', 'Type'),
+            ...parent::defineTableAttributes(),
+        ];
+    }
+
+    protected static function defineDefaultTableAttributes(string $source): array
+    {
+        return [
+            'source',
+            'target',
+            'type',
+            'dateCreated',
         ];
     }
 
@@ -75,14 +87,78 @@ class Webmention extends Element
 
     private Asset|null|false $_avatar = null;
 
+    protected function uiLabel(): ?string
+    {
+        return Craft::t('webmention', '{author} on {source}', [
+            'author' => $this->authorName,
+            'source' => parse_url($this->source, PHP_URL_HOST),
+        ]);
+    }
+
     protected function attributeHtml(string $attribute): string
     {
         return (string) match ($attribute) {
-            'authorName' => Html::tag('strong', $this->$attribute),
+            'authorName' => $this->authorAttributeHtml(),
+            'source' => $this->sourceAttributeHtml(),
+            'target' => $this->targetAttributeHtml(),
             'text' => $this->$attribute,
-            'target' => Html::a($this->$attribute, $this->$attribute),
+            'type' => ucfirst($this->type),
             default => parent::attributeHtml($attribute),
         };
+    }
+
+    private function authorAttributeHtml(): string
+    {
+        $html = Html::beginTag('div', [
+            'class' => ['chip', Cp::CHIP_SIZE_SMALL],
+        ]);
+
+        $avatar = $this->getAvatar();
+        if ($avatar) {
+            $html .= $avatar->getThumbHtml(30);
+        }
+
+        $html .= Html::beginTag('div', ['class' => 'chip-content']) .
+            Html::encode($this->authorName) .
+            Html::endTag('div') .
+            Html::endTag('div');
+
+        return $html;
+    }
+
+    private function sourceAttributeHtml(bool $shorten = true): string
+    {
+        if ($shorten) {
+            $label = parse_url($this->source, PHP_URL_HOST);
+        } else {
+            $label = preg_replace('/^https?:\/\//', '', $this->target);
+        }
+
+        return Html::a($label, $this->source);
+    }
+
+    private function targetAttributeHtml(): string
+    {
+        if ($this->targetId) {
+            $element = Craft::$app->elements->getElementById($this->targetId, siteId: $this->targetSiteId);
+            if ($element) {
+                return Cp::elementChipHtml($element);
+            }
+        }
+
+        $label = preg_replace('/^https?:\/\/.*?\//', '', $this->target);
+        return Html::tag('a', $label, $this->target);
+    }
+
+    protected function metadata(): array
+    {
+        return [
+            Craft::t('webmention', 'Author') => $this->attributeHtml('authorName'),
+            Craft::t('webmention', 'Type') => $this->attributeHtml('type'),
+            Craft::t('webmention', 'Text') => $this->attributeHtml('text'),
+            Craft::t('webmention', 'Source') => $this->sourceAttributeHtml(false),
+            Craft::t('webmention', 'Target') => $this->targetAttributeHtml(),
+        ];
     }
 
     /**
