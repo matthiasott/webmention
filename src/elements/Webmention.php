@@ -13,6 +13,7 @@ use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use DateTime;
+use matthiasott\webmention\elements\actions\Update;
 use matthiasott\webmention\elements\db\WebmentionQuery;
 use matthiasott\webmention\records\Webmention as WebmentionRecord;
 use yii\base\InvalidConfigException;
@@ -97,20 +98,23 @@ class Webmention extends Element
 
     protected function attributeHtml(string $attribute): string
     {
-        return (string) match ($attribute) {
+        return match ($attribute) {
             'authorName' => $this->authorAttributeHtml(),
             'source' => $this->sourceAttributeHtml(),
             'target' => $this->targetAttributeHtml(),
-            'text' => $this->$attribute,
-            'type' => ucfirst($this->type),
+            'type' => Html::encode(ucfirst($this->type)),
             default => parent::attributeHtml($attribute),
         };
     }
 
-    private function authorAttributeHtml(): string
+    private function authorAttributeHtml(bool $chromeless = false): string
     {
         $html = Html::beginTag('div', [
-            'class' => ['chip', Cp::CHIP_SIZE_SMALL],
+            'class' => array_filter([
+                'chip',
+                Cp::CHIP_SIZE_SMALL,
+                $chromeless ? 'chromeless' : null,
+            ]),
         ]);
 
         $avatar = $this->getAvatar();
@@ -134,30 +138,75 @@ class Webmention extends Element
             $label = preg_replace('/^https?:\/\//', '', $this->target);
         }
 
-        return Html::a($label, $this->source);
+        return Html::a(Html::encode($label), $this->source);
     }
 
-    private function targetAttributeHtml(): string
+    private function targetAttributeHtml(bool $chromeless = false): string
     {
         if ($this->targetId) {
             $element = Craft::$app->elements->getElementById($this->targetId, siteId: $this->targetSiteId);
             if ($element) {
-                return Cp::elementChipHtml($element);
+                $html = Cp::elementChipHtml($element);
+                if ($chromeless) {
+                    $html = Html::modifyTagAttributes($html, ['class' => 'chromeless']);
+                }
+                return $html;
             }
         }
 
         $label = preg_replace('/^https?:\/\/.*?\//', '', $this->target);
-        return Html::tag('a', $label, $this->target);
+        return Html::a(Html::encode($label), $this->target);
     }
 
     protected function metadata(): array
     {
         return [
-            Craft::t('webmention', 'Author') => $this->attributeHtml('authorName'),
+            Craft::t('webmention', 'Author') => $this->authorAttributeHtml(true),
             Craft::t('webmention', 'Type') => $this->attributeHtml('type'),
             Craft::t('webmention', 'Text') => $this->attributeHtml('text'),
             Craft::t('webmention', 'Source') => $this->sourceAttributeHtml(false),
-            Craft::t('webmention', 'Target') => $this->targetAttributeHtml(),
+            Craft::t('webmention', 'Target') => $this->targetAttributeHtml(true),
+        ];
+    }
+
+    protected static function defineActions(string $source): array
+    {
+        return [
+            Update::class,
+        ];
+    }
+
+    protected function safeActionMenuItems(): array
+    {
+        $updateId = sprintf('action-update-%s', mt_rand());
+
+        Craft::$app->view->registerJsWithVars(fn($id, $source, $target, $message) => <<<JS
+(() => {
+  $('#' + $id).on('activate', async () => {
+    await Craft.sendActionRequest('POST', 'webmention/webmention/handle-webmention', {
+      data: {
+        source: $source,
+        target: $target,
+      },
+    });
+    Craft.cp.runQueue();
+    Craft.cp.displaySuccess($message);
+  });
+})();
+JS, [
+            Craft::$app->view->namespaceInputId($updateId),
+            $this->source,
+            $this->target,
+            Craft::t('webmention', 'Webmention update queued.'),
+        ]);
+
+        return [
+            ...parent::safeActionMenuItems(),
+            [
+                'id' => $updateId,
+                'icon' => 'arrows-rotate',
+                'label' => Craft::t('webmention', 'Update'),
+            ],
         ];
     }
 
