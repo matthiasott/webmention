@@ -7,7 +7,6 @@ use craft\base\ElementInterface;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 use craft\web\View;
-use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\Plugin;
 use Twig\Markup;

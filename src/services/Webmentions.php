@@ -22,7 +22,6 @@ use DOMXPath;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Collection;
-use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\jobs\SendWebmention;
