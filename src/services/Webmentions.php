@@ -9,6 +9,7 @@ use craft\elements\Entry;
 use craft\events\ModelEvent;
 use craft\helpers\App;
 use craft\helpers\FileHelper;
+use craft\helpers\Html;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
 use craft\helpers\Queue;
@@ -209,21 +210,14 @@ class Webmentions extends Component
      */
     public function parseWebmention(string $html, string $source, string $target): Webmention|false
     {
-        // Purify HTML with Yii's HTMLPurifier wrapper
-        $html = HtmlPurifier::process($html, [
-            'URI.AllowedSchemes' => [
-                'http' => true,
-                'https' => true,
-            ],
-        ]);
-
-        // Now the HTML is ready to be parsed with Mf2
+        // Parsed the HTML with Mf2
         $parsed = Mf2\parse($html, $source);
 
         // Let's look up where the h-entry is and use this array
         foreach ($parsed['items'] as $item) {
             if (in_array('h-entry', $item['type']) || in_array('p-entry', $item['type'])) {
                 $entry = $item;
+                break;
             }
         }
 
@@ -330,17 +324,23 @@ class Webmentions extends Component
         }
 
         // assign attributes
-        $model->authorName = $result['author']['name'];
+        $model->authorName = Html::encode($result['author']['name']);
         $model->avatarId = $result['author']['avatarId'] ?? null;
-        $model->authorUrl = $result['author']['url'];
+        $model->authorUrl = Html::encode($result['author']['url']);
         $model->published = new DateTime($result['published']);
-        $model->name = $result['name'];
-        $model->text = $result['text'];
-        $model->target = $target;
+        $model->name = Html::encode($result['name']);
+        // Purify the text with Yii's HTMLPurifier wrapper
+        $model->text = HtmlPurifier::process($result['text'], [
+            'URI.AllowedSchemes' => [
+                'http' => true,
+                'https' => true,
+            ],
+        ]);
+        $model->target = Html::encode($target);
         $model->targetId = $targetElement?->id;
         $model->targetSiteId = $targetElement && $targetElement->isLocalized() ? $targetElement->siteId : null;
-        $model->source = $source;
-        $model->hEntryUrl = $result['url'];
+        $model->source = Html::encode($source);
+        $model->hEntryUrl = Html::encode($result['url']);
         $model->host = $result['site'];
         $model->type = $result['type'];
 
