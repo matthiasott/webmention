@@ -1,4 +1,4 @@
-<p align="center"><img src="./src/icon.svg" width="100" height="100" alt="CKEditor icon"></p>
+<p align="center"><img src="./src/icon.svg" width="100" height="100" alt="Webmention icon in the shape of a W"></p>
 
 <h1 align="center">Webmention for Craft CMS</h1>
 
@@ -212,14 +212,18 @@ Thanks to everyone who helped me setting this up:
 - [Tom Arnold](https://www.webrocker.de/) (@webrocker) for relentlessly sending test Webmentions. ;) Also for feedback on Webmention sending settings.
 - [Jeremy Keith](https://adactio.com) (@adactio) for the feedback and also for giving the initial spark.
 - Everyone at the IndieWebCamps Düsseldorf and Berlin 2016 and in the IndieWeb Community!
+- [Brandon Kelly](brandonkelly.io) for basically rewriting the plugin to add support for Craft 5 and a lot more 🔥🎉
 
 ## License
 
 Code released under [the MIT license](https://github.com/matthiasott/webmention/LICENSE).
 
-## Author
+## Authors
 
 Matthias Ott   
 <mail@matthiasott.com>  
-<https://matthiasott.com>  
-<https://twitter.com/m_ott>
+<https://matthiasott.com>
+
+Brandon Kelly
+<brandon@pixelandtonic.com>
+<https://brandonkelly.io>
