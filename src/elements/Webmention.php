@@ -46,6 +46,16 @@ class Webmention extends Element
         return Craft::createObject(WebmentionCondition::class);
     }
 
+    protected static function defineSearchableAttributes(): array
+    {
+        return [
+            'authorName',
+            'source',
+            'target',
+            'text',
+        ];
+    }
+
     protected static function defineSources(string $context): array
     {
         return [

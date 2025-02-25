@@ -7,8 +7,11 @@ use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\console\Controller as ConsoleController;
+use craft\console\controllers\ResaveController;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineConsoleActionsEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -17,6 +20,7 @@ use craft\services\Fields;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use matthiasott\webmention\behaviors\ElementBehavior;
+use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\models\Settings;
 use matthiasott\webmention\services\Sender;
@@ -88,6 +92,17 @@ class Plugin extends BasePlugin
 
         Event::on(Element::class, Model::EVENT_DEFINE_BEHAVIORS, function(DefineBehaviorsEvent $event) {
             $event->behaviors['webmention'] = ElementBehavior::class;
+        });
+
+        Event::on(ResaveController::class, ConsoleController::EVENT_DEFINE_ACTIONS, static function(DefineConsoleActionsEvent $e) {
+            $e->actions['webmentions'] = [
+                'action' => function(): int {
+                    /** @var ResaveController $controller */
+                    $controller = Craft::$app->controller;
+                    return $controller->resaveElements(Webmention::class);
+                },
+                'helpSummary' => 'Re-saves webmentions.',
+            ];
         });
     }
 
