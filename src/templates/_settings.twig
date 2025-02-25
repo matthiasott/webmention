@@ -1,0 +1,109 @@
+{% import "_includes/forms" as forms %}
+
+{% set hasVolumes = craft.app.volumes.getAllVolumes|length != 0 %}
+{% set avatarVolume = settings.avatarVolume ? craft.app.volumes.getVolumeByUid(settings.avatarVolume) : null %}
+
+{% set allVolumes = craft.app.volumes.getAllVolumes() %}
+{% set volumeList = [] %}
+{% set validVolumeUids = [] %}
+
+{% for volume in allVolumes %}
+  {% if volume.getTransformFs().hasUrls %}
+    {% set volumeList = volumeList|push({label: volume.name, value: volume.uid}) %}
+    {% set validVolumeUids = validVolumeUids|push(volume.uid) %}
+  {% endif %}
+{% endfor %}
+
+{% macro assetLocationInput(volumeOptions, volume, path, disabled) %}
+  {% import '_includes/forms' as forms %}
+  <div class="flex">
+    <div>
+      {{ forms.volume({
+        id: 'avatarVolume',
+        name: 'avatarVolume',
+        options: volumeOptions,
+        value: volume.id ?? null,
+        disabled: disabled,
+      }) }}
+    </div>
+    <div class="flex-grow">
+      {{ forms.text({
+        id: 'avatarPath',
+        class: 'ltr',
+        name: 'avatarPath',
+        value: path,
+        placeholder: "path/to/subfolder"|t('app'),
+        disabled: disabled,
+      }) }}
+    </div>
+  </div>
+{% endmacro %}
+
+{{ forms.textField({
+  label: 'Webmention Endpoint Route (Slug)',
+  instructions: 'Set the URL slug / route of your Webmention endpoint here. Defaults to "webmention", but you can insert anything that makes sense to you…',
+  id: 'endpointSlug',
+  name: 'endpointSlug',
+  value: settings.endpointSlug,
+  first: true,
+}) }}
+
+{{ forms.textField({
+  label: 'Maximum Length of Webmention Text',
+  instructions: 'Set the maximum character count for summaries, comments and text excerpts from posts.',
+  id: 'maxTextLength',
+  name: 'maxTextLength',
+  value: settings['maxTextLength'],
+}) }}
+
+{{ forms.lightswitchField({
+  first: true,
+  label: 'Parse Brid.gy Webmentions',
+  instructions: 'Brid.gy sends Webmentions for comments, retweets and other interactions on Twitter, Facebook, Google+, Instagram, and Flickr.'|t,
+  name: 'useBridgy',
+  on: settings.useBridgy,
+}) }}
+
+{% if hasVolumes %}
+  {% set volumeOptions = craft.cp.getVolumeOptions() %}
+  {%  if not avatarVolume %}
+    {% set volumeOptions = volumeOptions|unshift({label: 'Select a volume'|t('app'), value: null}) %}
+  {%  endif %}
+
+  {{ forms.field({
+    label: 'Avatar Location',
+    instructions: 'This plugin saves user photos (avatars) for incoming Webmentions to avoid exploits. Choose the volume where user avatars will be stored.',
+  }, _self.assetLocationInput(volumeOptions, avatarVolume, settings.avatarPath, readOnly)) }}
+{% else %}
+  {{ forms.field({
+    label: 'Avatar Location',
+  }, '<p class="error">' ~ 'No volumes exist yet.'|t('app') ~ '</p>') }}
+{% endif %}
+
+<div class="field" id="settings-layout-field">
+  <div class="heading">
+    <label id="settings-layout-label">Entry Types</label>
+    <div class="instructions">
+      <p>Select all entry types for which you want to send Webmentions. <strong>Note: When new entry types (and
+          sections) are added, they are set to “send Webmentions” by default.</strong></p>
+    </div>
+  </div>
+  {% for option in settings.entryTypes %}
+    <div>
+
+      {% set id = ('checkbox'~random()) %}
+
+      <input type="hidden" name="entryTypes[{{ option.handle }}][handle]" value="{{ option.handle }}">
+      <input type="hidden" name="entryTypes[{{ option.handle }}][label]" value="{{ option.label }}">
+      <input type="hidden" name="entryTypes[{{ option.handle }}][checked]" value="0">
+
+      <input type="checkbox" value="entryTypes[{{ option.handle }}][checked]"
+             id="{{ id }}"
+             class="checkbox"
+             name="entryTypes[{{ option.handle }}][checked]"
+          {%- if option.checked is defined and option.checked %} checked{% endif %} >
+
+      <label for="{{ id }}">{{ option.label|raw }}</label>
+    </div>
+  {% endfor %}
+</div>

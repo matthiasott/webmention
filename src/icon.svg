@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="linear-gradient" x1="0.853" y1="-0.173" x2="0.572" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#e5422b"/>
+      <stop offset="1" stop-color="#184cef"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="0.5" y1="-0.371" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#e53333"/>
+      <stop offset="1" stop-color="#184cef"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-3" x1="0.878" y1="-0.171" x2="-0.161" y2="1.677" xlink:href="#linear-gradient"/>
+    <linearGradient id="linear-gradient-4" x1="0.679" y1="-0.029" x2="-0.094" y2="1.562" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#ef2e12"/>
+      <stop offset="1" stop-color="#184cef"/>
+    </linearGradient>
+    <clipPath id="clip-logo">
+      <rect width="100" height="100"/>
+    </clipPath>
+  </defs>
+  <g id="logo" clip-path="url(#clip-logo)">
+    <g id="w" transform="translate(0 -1)">
+      <path id="_3" data-name="3" d="M52.447,115.146l6.912-19.031,11.947,34.3H71.5l-7.332,19.483Z" transform="translate(-7.03 -61.693)" fill-rule="evenodd" fill="url(#linear-gradient)"/>
+      <path id="_1" data-name="1" d="M36.091,526.705,53.23,590.634l-13.8.178L20.206,526.723Z" transform="translate(-20.206 -502.609)" fill="url(#linear-gradient-2)"/>
+      <path id="_2" data-name="2" d="M89.27,619.663l19.357-53.773h13.744L103.94,619.663Z" transform="translate(-70.042 -531.464)" fill="url(#linear-gradient-3)"/>
+      <path id="_4" data-name="4" d="M196.074,78.743l16.784-55.58-11.39-.024,22.188-20.4L238.94,23.166l-12.155-.007L210.929,78.743Z" transform="translate(-138.94 9.448)" fill-rule="evenodd" fill="url(#linear-gradient-4)"/>
+      <path id="shadow" d="M1576.629-1025.174l-4.635,25.774-2.084-6.2Z" transform="translate(-1524.302 1059.606)" fill="rgba(34,16,85,0.59)" opacity="0.62"/>
+    </g>
+  </g>
+</svg>
