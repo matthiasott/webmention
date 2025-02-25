@@ -36,7 +36,7 @@ class Webmention extends Element
      */
     public static function find(): ElementQueryInterface
     {
-        return new WebmentionQuery(static::class);
+        return Craft::createObject(WebmentionQuery::class, [static::class]);
     }
 
     protected static function defineSources(string $context): array
