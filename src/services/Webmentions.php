@@ -282,7 +282,11 @@ class Webmentions extends Component
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
         // If no author photo is defined, check gravatar for image
-        if (empty($result['author']['photo']) && $representative) {
+        if (!empty($result['author']['photo'])) {
+            if (isset($result['author']['photo']['value'])) {
+                $result['author']['photo'] = $result['author']['photo']['value'];
+            }
+        } elseif ($representative) {
             if ($representative['properties']['photo'][0]) {
                 $result['author']['photo'] = $representative['properties']['photo'][0];
             } else {
@@ -298,7 +302,7 @@ class Webmentions extends Component
         // Author photo should be saved locally to avoid exploits.
         // So if an author photo is available get the image and save it to assets
 
-        if ($result['author']['photo']) {
+        if (!empty($result['author']['photo'])) {
             $asset = $this->saveAsset($result['author']['photo']);
             if ($asset) {
                 $result['author']['avatarId'] = $asset->id;
@@ -362,7 +366,7 @@ class Webmentions extends Component
         $fileExtension = (pathinfo($url, PATHINFO_EXTENSION));
         $fileName = $hashedFileName . "." . $fileExtension;
         $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), $fileName);
-        FileHelper::writeToFile($fileName, (string)$response->getBody());
+        FileHelper::writeToFile($tempPath, (string)$response->getBody());
 
         // If it's an image, cleanse it of any malicious scripts that may be embedded
         // (recommended unless you completely trust everyone that’s uploading images)
