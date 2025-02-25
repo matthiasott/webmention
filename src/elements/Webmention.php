@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\db\Query;
 use craft\elements\Asset;
+use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
 use craft\helpers\Cp;
@@ -14,6 +15,7 @@ use craft\helpers\Db;
 use craft\helpers\Html;
 use DateTime;
 use matthiasott\webmention\elements\actions\Update;
+use matthiasott\webmention\elements\conditions\WebmentionCondition;
 use matthiasott\webmention\elements\db\WebmentionQuery;
 use matthiasott\webmention\records\Webmention as WebmentionRecord;
 use yii\base\InvalidConfigException;
@@ -39,6 +41,11 @@ class Webmention extends Element
         return Craft::createObject(WebmentionQuery::class, [static::class]);
     }
 
+    public static function createCondition(): ElementConditionInterface
+    {
+        return Craft::createObject(WebmentionCondition::class);
+    }
+
     protected static function defineSources(string $context): array
     {
         return [
@@ -57,6 +64,7 @@ class Webmention extends Element
             'source' => Craft::t('webmention', 'Source'),
             'target' => Craft::t('webmention', 'Target'),
             'type' => Craft::t('webmention', 'Type'),
+            'published' => Craft::t('webmention', 'Published on'),
             ...parent::defineTableAttributes(),
         ];
     }
@@ -172,6 +180,7 @@ class Webmention extends Element
             Craft::t('webmention', 'Text') => $this->attributeHtml('text'),
             Craft::t('webmention', 'Source') => $this->sourceAttributeHtml(false),
             Craft::t('webmention', 'Target') => $this->targetAttributeHtml(true),
+            Craft::t('webmention', 'Published on') => $this->attributeHtml('published'),
         ];
     }
 
