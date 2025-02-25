@@ -19,6 +19,8 @@ class WebmentionQuery extends ElementQuery
     public mixed $name = null;
     public mixed $text = null;
     public mixed $target = null;
+    public mixed $targetId = null;
+    public mixed $targetSiteId = null;
     public mixed $source = null;
     public mixed $hEntryUrl = null;
     public mixed $host = null;
@@ -58,6 +60,18 @@ class WebmentionQuery extends ElementQuery
     public function target(mixed $value): static
     {
         $this->target = $value;
+        return $this;
+    }
+
+    public function targetId(mixed $value): static
+    {
+        $this->targetId = $value;
+        return $this;
+    }
+
+    public function targetSiteId(mixed $value): static
+    {
+        $this->targetSiteId = $value;
         return $this;
     }
 
@@ -107,6 +121,8 @@ class WebmentionQuery extends ElementQuery
             'webmentions.name',
             'webmentions.text',
             'webmentions.target',
+            'webmentions.targetId',
+            'webmentions.targetSiteId',
             'webmentions.source',
             'webmentions.hEntryUrl',
             'webmentions.host',
@@ -136,6 +152,18 @@ class WebmentionQuery extends ElementQuery
 
         if ($this->target) {
             $this->subQuery->andWhere(Db::parseParam('webmentions.target', $this->target));
+        }
+
+        if ($this->targetId) {
+            $this->subQuery->andWhere(Db::parseParam('webmentions.targetId', $this->targetId));
+        }
+
+        if ($this->targetSiteId) {
+            $this->subQuery->andWhere([
+                'or',
+                Db::parseParam('webmentions.targetSiteId', $this->targetSiteId),
+                ['webmentions.targetSiteId' => null],
+            ]);
         }
 
         if ($this->source) {

@@ -65,6 +65,8 @@ class Webmention extends Element
     public ?string $name = null;
     public ?string $text = null;
     public ?string $target = null;
+    public ?int $targetId = null;
+    public ?int $targetSiteId = null;
     public ?string $source = null;
     public ?string $hEntryUrl = null;
     public ?string $host = null;
@@ -157,6 +159,8 @@ class Webmention extends Element
         $record->name = $this->name;
         $record->text = $this->text;
         $record->target = $this->target;
+        $record->targetId = $this->targetId;
+        $record->targetSiteId = $this->targetSiteId;
         $record->source = $this->source;
         $record->hEntryUrl = $this->hEntryUrl;
         $record->host = $this->host;

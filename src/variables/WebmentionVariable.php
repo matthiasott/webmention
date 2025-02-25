@@ -3,9 +3,11 @@
 namespace matthiasott\webmention\variables;
 
 use Craft;
+use craft\base\ElementInterface;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\Plugin;
 use Twig\Markup;
@@ -16,13 +18,39 @@ use Twig\Markup;
 class WebmentionVariable
 {
     /**
+     * Gets all available webmentions for a URL
+     *
+     * @param string $url
+     * @return Webmention[]
+     */
+    public function getWebmentionsForUrl(string $url): array
+    {
+        return Webmention::find()
+            ->target($url)
+            ->all();
+    }
+
+    /**
      * Gets all available webmentions for an entry
      *
+     * @param string $url
      * @return Webmention[]
+     * @deprecated
      */
     public function getAllWebmentionsForEntry(string $url): array
     {
-        return Webmention::find()->target($url)->all();
+        return $this->getWebmentionsForUrl($url);
+    }
+
+    /**
+     * Gets all available webmentions for an element
+     *
+     * @param ElementInterface $element
+     * @return Webmention[]
+     */
+    public function getWebmentionsForElement(ElementInterface $element): array
+    {
+        return Plugin::getInstance()->webmentions->getWebmentionsForElement($element);
     }
 
     /**
@@ -31,7 +59,7 @@ class WebmentionVariable
      * @param int $id
      * @return Webmention|null
      */
-    public function getWebmentionById($id): ?Webmention
+    public function getWebmentionById(int $id): ?Webmention
     {
         return Webmention::findOne($id);
     }
@@ -46,7 +74,7 @@ class WebmentionVariable
         return UrlHelper::siteUrl(Plugin::getInstance()->settings->endpointSlug);
     }
 
-    public function showWebmentions($url): Markup
+    public function showWebmentions(string $url): Markup
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmentions.twig', [
             'url' => $url,
@@ -55,7 +83,7 @@ class WebmentionVariable
         return Template::raw($html);
     }
 
-    public function webmentionForm($url)
+    public function webmentionForm(string $url)
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmention-form.twig', [
             'url' => $url,

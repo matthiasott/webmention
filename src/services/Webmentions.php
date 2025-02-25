@@ -3,13 +3,16 @@
 namespace matthiasott\webmention\services;
 
 use Craft;
+use craft\base\ElementInterface;
 use craft\elements\Asset;
 use craft\elements\Entry;
 use craft\events\ModelEvent;
+use craft\helpers\App;
 use craft\helpers\FileHelper;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
 use craft\helpers\Queue;
+use craft\models\Site;
 use craft\models\VolumeFolder;
 use DateTime;
 use DOMDocument;
@@ -17,6 +20,8 @@ use DOMElement;
 use DOMXPath;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\RequestOptions;
+use Illuminate\Support\Collection;
+use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\jobs\SendWebmention;
@@ -32,6 +37,20 @@ use yii\base\InvalidConfigException;
  */
 class Webmentions extends Component
 {
+    /**
+     * Gets all available webmentions for an element
+     *
+     * @param ElementInterface $element
+     * @return Webmention[]
+     */
+    public function getWebmentionsForElement(ElementInterface $element): array
+    {
+        return Webmention::find()
+            ->targetId($element->id)
+            ->targetSiteId($element::isLocalized() ? $element->siteId : null)
+            ->all();
+    }
+
     /**
      * Check a webmention for typical structures of a brid.gy webmention and update $results array accordingly.
      *
@@ -287,10 +306,19 @@ class Webmentions extends Component
         }
 
         // Check if webmention for combination of src and target exists
-        $model = Webmention::find()
-            ->target($target)
-            ->source($source)
-            ->one();
+        $targetElement = $this->getTargetElement($target);
+        if ($targetElement) {
+            $model = Webmention::find()
+                ->targetId($targetElement->id)
+                ->targetSiteId($targetElement::isLocalized() ? $targetElement->siteId : null)
+                ->source($source)
+                ->one();
+        } else {
+            $model = Webmention::find()
+                ->target($target)
+                ->source($source)
+                ->one();
+        }
 
         if (!$model) {
             // create new webmention
@@ -305,6 +333,8 @@ class Webmentions extends Component
         $model->name = $result['name'];
         $model->text = $result['text'];
         $model->target = $target;
+        $model->targetId = $targetElement?->id;
+        $model->targetSiteId = $targetElement && $targetElement->isLocalized() ? $targetElement->siteId : null;
         $model->source = $source;
         $model->hEntryUrl = $result['url'];
         $model->host = $result['site'];
@@ -380,6 +410,122 @@ class Webmentions extends Component
         }
 
         return Craft::$app->assets->ensureFolderByFullPathAndVolume($avatarPath, $volume);
+    }
+
+    /**
+     * Returns a target element by its URL.
+     *
+     * @param string $url
+     * @return ElementInterface|null
+     */
+    public function getTargetElement(string $url): ?ElementInterface
+    {
+        $parsedTarget = $this->parseUrl($url);
+        if (!$parsedTarget) {
+            return null;
+        }
+
+        $sitesService = Craft::$app->sites;
+        $sites = Collection::make($sitesService->getAllSites(false))
+            ->keyBy(fn(Site $site) => $site->id)
+            ->map(function(Site $site) {
+                $baseUrl = $site->getBaseUrl();
+                $parsedBaseUrl = $baseUrl ? $this->parseUrl($baseUrl) : null;
+                return [$site, $parsedBaseUrl];
+            })
+            ->all();
+
+        $elementsService = Craft::$app->getElements();
+
+        $siteInfo = $this->matchTargetSite($parsedTarget, $sites);
+        if ($siteInfo) {
+            [$site, $parsedSiteUrl] = $siteInfo;
+        } else {
+            $site = $sitesService->getPrimarySite();
+            $parsedSiteUrl = $sites[$site->id];
+        }
+
+        // figure out the entry URI relative to the site base path
+        $uri = $parsedTarget['path'];
+        if ($parsedSiteUrl['path'] && str_starts_with("{$parsedTarget['path']}/", "{$parsedSiteUrl['path']}/")) {
+            $uri = substr($uri, strlen($parsedSiteUrl['path']) + 1);
+        }
+
+        return $elementsService->getElementByUri($uri, $site->id);
+    }
+
+    /**
+     * @param array $parsedTarget
+     * @param array{0:Site,1:array}[] $sites
+     * @return array
+     */
+    private function matchTargetSite(array $parsedTarget, array $sites): array
+    {
+        $scores = [];
+        foreach ($sites as $i => $site) {
+            $scores[$i] = $this->scoreSiteForTarget($site, $parsedTarget);
+        }
+
+        // Sort by scores descending
+        arsort($scores, SORT_NUMERIC);
+        return $sites[array_key_first($scores)];
+    }
+
+    /**
+     * @param array{0:Site,1:array} $site
+     * @param array $parsedTarget
+     */
+    private function scoreSiteForTarget(array $site, array $parsedTarget): int
+    {
+        if ($site[1]) {
+            $score = $this->scoreSiteUrlForTarget($site[1], $parsedTarget);
+        } else {
+            $score = 0;
+        }
+
+        if ($site[0]->primary) {
+            // One more point in case we need a tiebreaker
+            $score++;
+        }
+
+        return $score;
+    }
+
+    private function scoreSiteUrlForTarget(array $parsedSiteUrl, array $parsedTarget): int
+    {
+        // Does the site URL specify a host name?
+        if (
+            !empty($parsedSiteUrl['host']) &&
+            !empty($parsedTarget['host']) &&
+            $parsedSiteUrl['host'] !== $parsedTarget['host'] &&
+            (
+                !App::supportsIdn() ||
+                !defined('IDNA_NONTRANSITIONAL_TO_ASCII') ||
+                idn_to_ascii($parsedSiteUrl['host'], IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46) !== $parsedTarget['host']
+            )
+        ) {
+            return 0;
+        }
+
+        // Does the site URL specify a base path?
+        if (
+            !str_starts_with("{$parsedTarget['path']}/", "{$parsedSiteUrl['path']}/")
+        ) {
+            return 0;
+        }
+
+        // It's a possible match!
+        return 1000 + strlen($parsedSiteUrl['path'] ?? '') * 100;
+    }
+
+    private function parseUrl(string $url): ?array
+    {
+        $parsed = parse_url($url);
+        if (!$parsed) {
+            return null;
+        }
+        $parsed['path'] = preg_replace('/\/\/+/', '/', trim($parsed['path'] ?? '', '/'));
+        return $parsed;
     }
 
     /**

@@ -3,10 +3,12 @@
 namespace matthiasott\webmention;
 
 use Craft;
+use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\Entry;
+use craft\events\DefineBehaviorsEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -14,6 +16,7 @@ use craft\services\Entries;
 use craft\services\Fields;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\models\Settings;
 use matthiasott\webmention\services\Sender;
@@ -41,7 +44,7 @@ class Plugin extends BasePlugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public bool $hasReadOnlyCpSettings = true;
-    public string $schemaVersion = '1.0.0.3';
+    public string $schemaVersion = '1.0.0.4';
 
     public function init(): void
     {
@@ -81,6 +84,10 @@ class Plugin extends BasePlugin
 
         Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, function(YiiEvent $event) {
             $event->sender->set('webmention', WebmentionVariable::class);
+        });
+
+        Event::on(Element::class, Model::EVENT_DEFINE_BEHAVIORS, function(DefineBehaviorsEvent $event) {
+            $event->behaviors['webmention'] = ElementBehavior::class;
         });
     }
 

@@ -20,6 +20,8 @@ use craft\db\ActiveRecord;
  * @property string|null $name
  * @property string|null $text
  * @property string|null $target
+ * @property int|null $targetId
+ * @property int|null $targetSiteId
  * @property string|null $source
  * @property string|null $hEntryUrl
  * @property string|null $host
