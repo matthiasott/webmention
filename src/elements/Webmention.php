@@ -122,9 +122,15 @@ class Webmention extends Element
             $html .= $avatar->getThumbHtml(30);
         }
 
-        $html .= Html::beginTag('div', ['class' => 'chip-content']) .
-            Html::encode($this->authorName) .
-            Html::endTag('div') .
+        $html .= Html::beginTag('div', ['class' => 'chip-content']);
+
+        if ($this->authorUrl) {
+            $html .= Html::a(Html::encode($this->authorName), $this->authorUrl, ['target' => '_blank']);
+        } else {
+            $html .= Html::encode($this->authorName);
+        }
+
+        $html .= Html::endTag('div') .
             Html::endTag('div');
 
         return $html;
@@ -138,7 +144,7 @@ class Webmention extends Element
             $label = preg_replace('/^https?:\/\//', '', $this->target);
         }
 
-        return Html::a(Html::encode($label), $this->source);
+        return Html::a(Html::encode($label), $this->source, ['target' => '_blank']);
     }
 
     private function targetAttributeHtml(bool $chromeless = false): string
@@ -155,7 +161,7 @@ class Webmention extends Element
         }
 
         $label = preg_replace('/^https?:\/\/.*?\//', '', $this->target);
-        return Html::a(Html::encode($label), $this->target);
+        return Html::a(Html::encode($label), $this->target, ['target' => '_blank']);
     }
 
     protected function metadata(): array
