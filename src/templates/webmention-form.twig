@@ -1,4 +1,5 @@
-<form class="webmention-form" method="post" action="/{{ craft.webmention.settings.endpointSlug }}">
+{% set settings = craft.app.getPlugins().getPlugin('webmention').getSettings() %}
+<form class="webmention-form" method="post" action="/{{ settings.endpointSlug }}">
   <label for="webmention-source">Have you published a response to this? Send me a <a
         href="http://indiewebcamp.com/webmention">webmention</a> by letting me know the <abbr
         title="Uniform Resource Locator">URL</abbr>.</label>
