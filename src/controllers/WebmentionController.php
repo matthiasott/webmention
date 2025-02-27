@@ -3,6 +3,7 @@
 namespace matthiasott\webmention\controllers;
 
 use craft\helpers\Queue;
+use craft\helpers\UrlHelper;
 use craft\web\Controller;
 use matthiasott\webmention\jobs\ReceiveWebmention;
 use matthiasott\webmention\Plugin;
@@ -19,7 +20,10 @@ class WebmentionController extends Controller
     public function actionHandleRequest(): ?Response
     {
         if ($this->request->isPost) {
-            return $this->actionHandleWebmention();
+            $this->actionHandleWebmention();
+            return $this->redirectToPostedUrl(null, UrlHelper::url($this->request->absoluteUrl, [
+                'success' => 1,
+            ]));
         }
 
         if ($this->request->isGet) {
