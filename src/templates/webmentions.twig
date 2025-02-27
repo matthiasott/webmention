@@ -19,8 +19,9 @@
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
                   href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
-                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
-                      class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% if block.published is not null %}
+                  <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% endif %}
               </a></figcaption>
             </a>
           </figure>
@@ -61,8 +62,9 @@
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
                   href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
-                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
-                      class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% if block.published is not null %}
+                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% endif %}
               </a></figcaption>
             </a>
           </figure>
@@ -91,8 +93,9 @@
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
                   href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
-                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}"
-                      class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% if block.published is not null %}
+                  <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                {% endif %}
               </a></figcaption>
             </a>
           </figure>
