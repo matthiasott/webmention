@@ -15,6 +15,7 @@ use craft\events\DefineConsoleActionsEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\log\MonologTarget;
 use craft\services\Entries;
 use craft\services\Fields;
 use craft\web\twig\variables\CraftVariable;
@@ -26,6 +27,8 @@ use matthiasott\webmention\models\Settings;
 use matthiasott\webmention\services\Sender;
 use matthiasott\webmention\services\Webmentions;
 use matthiasott\webmention\variables\WebmentionVariable;
+use Monolog\Formatter\LineFormatter;
+use Psr\Log\LogLevel;
 use yii\base\Event as YiiEvent;
 
 /**
@@ -104,6 +107,18 @@ class Plugin extends BasePlugin
                 'helpSummary' => 'Re-saves webmentions.',
             ];
         });
+
+        Craft::getLogger()->dispatcher->targets[] = new MonologTarget([
+            'name' => 'webmention',
+            'categories' => ['webmention'],
+            'level' => LogLevel::INFO,
+            'logContext' => false,
+            'allowLineBreaks' => false,
+            'formatter' => new LineFormatter(
+                format: "%datetime% %message%\n",
+                dateFormat: 'Y-m-d H:i:s',
+            ),
+        ]);
     }
 
     public function getCpNavItem(): ?array
