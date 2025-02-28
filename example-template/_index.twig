@@ -7,6 +7,10 @@
   <section class="container">
     <h1>Webmention Endpoint</h1>
 
+    {% if craft.app.request.getQueryParam('success') %}
+      <p>Thanks for the webmention!</p>
+    {% endif %}
+
     {% set notice = craft.app.session.getFlash('notice') %}
     {% if notice %}
     <div class="callout notice">
