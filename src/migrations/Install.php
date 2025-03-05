@@ -30,6 +30,7 @@ class Install extends Migration
             'text' => $this->string(),
             'hEntryUrl' => $this->string(),
             'rsvp' => $this->string(),
+            'properties' => $this->string(),
             'PRIMARY KEY([[id]])',
         ]);
 

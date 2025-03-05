@@ -2,6 +2,7 @@
   "name": "matthiasott/webmention",
   "description": "Webmention Plugin for Craft CMS",
   "type": "craft-plugin",
+  "version": "0.4.1",
   "keywords": [
     "webmention"
   ],

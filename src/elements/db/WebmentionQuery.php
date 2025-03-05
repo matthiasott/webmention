@@ -26,6 +26,7 @@ class WebmentionQuery extends ElementQuery
     public mixed $host = null;
     public mixed $type = null;
     public mixed $rsvp = null;
+    public mixed $properties = null;
 
     public function authorName(mixed $value): static
     {
@@ -105,6 +106,12 @@ class WebmentionQuery extends ElementQuery
         return $this;
     }
 
+    public function properties(mixed $value): static
+    {
+        $this->properties = $value;
+        return $this;
+    }
+
     protected function beforePrepare(): bool
     {
         if (!parent::beforePrepare()) {
@@ -128,6 +135,7 @@ class WebmentionQuery extends ElementQuery
             'webmentions.host',
             'webmentions.type',
             'webmentions.rsvp',
+            'webmentions.properties'
         ]);
 
         if ($this->authorName) {
@@ -184,6 +192,10 @@ class WebmentionQuery extends ElementQuery
 
         if ($this->rsvp) {
             $this->subQuery->andWhere(Db::parseParam('webmentions.rsvp', $this->rsvp));
+        }
+
+        if ($this->properties) {
+            $this->subQuery->andWhere(Db::parseParam('webmentions.properties', $this->properties));
         }
 
         return true;

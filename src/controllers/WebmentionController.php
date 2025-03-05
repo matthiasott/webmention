@@ -49,6 +49,7 @@ class WebmentionController extends Controller
             'target' => $target,
         ]));
 
+        // Return 202 Accepted, according to https://www.w3.org/TR/webmention/#h-sender-notifies-receiver
         return $this->asRaw('')->setStatusCode(202);
     }
 

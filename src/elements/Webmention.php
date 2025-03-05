@@ -103,6 +103,7 @@ class Webmention extends Element
     public ?string $host = null;
     public ?string $type = null;
     public ?string $rsvp = null;
+    public ?string $properties = null;
 
     private Asset|null|false $_avatar = null;
 
@@ -311,6 +312,7 @@ JS, [
         $record->host = $this->host;
         $record->type = $this->type;
         $record->rsvp = $this->rsvp;
+        $record->properties = $this->properties;
 
         // Capture the dirty attributes from the record
         $dirtyAttributes = array_keys($record->getDirtyAttributes());
