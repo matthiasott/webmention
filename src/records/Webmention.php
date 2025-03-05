@@ -27,7 +27,7 @@ use craft\db\ActiveRecord;
  * @property string|null $host
  * @property string|null $type
  * @property string|null $rsvp
- * @property string|null $properties
+ * @property json|null $properties
  */
 class Webmention extends ActiveRecord
 {

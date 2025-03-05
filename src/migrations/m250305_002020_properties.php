@@ -22,7 +22,7 @@ class m250305_002020_properties extends Migration
     {
         $tableName = WebmentionRecord::tableName();
 
-        $this->addColumn($tableName, 'properties', $this->string()->after('rsvp'));
+        $this->addColumn($tableName, 'properties', $this->json()->after('rsvp'));
 
         return true;
     }

@@ -13,7 +13,6 @@ use craft\helpers\Html;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
 use craft\helpers\Queue;
-use craft\helpers\Json;
 use craft\models\Site;
 use craft\models\VolumeFolder;
 use DateTime;
@@ -226,11 +225,6 @@ class Webmentions extends Component
             return false;
         }
 
-        // Get all properties for later use
-        if ($entry['properties']) {
-            $properties = $entry['properties'];
-        }
-
         // Parse comment – with max text length from settings
         $settings = Plugin::getInstance()->settings;
         $maxLength = $settings->maxTextLength;
@@ -352,7 +346,7 @@ class Webmentions extends Component
         $model->hEntryUrl = Html::encode($result['url']);
         $model->host = $result['site'];
         $model->type = $result['type'];
-        $model->properties = Json::encode($properties);
+        $model->properties = $entry['properties'];
 
         return $model;
     }

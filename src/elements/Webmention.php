@@ -103,7 +103,7 @@ class Webmention extends Element
     public ?string $host = null;
     public ?string $type = null;
     public ?string $rsvp = null;
-    public ?string $properties = null;
+    public ?array $properties = null;
 
     private Asset|null|false $_avatar = null;
 
