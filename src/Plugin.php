@@ -51,7 +51,7 @@ class Plugin extends BasePlugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public bool $hasReadOnlyCpSettings = true;
-    public string $schemaVersion = '1.0.0.4';
+    public string $schemaVersion = '1.0.0.6';
 
     public function init(): void
     {
