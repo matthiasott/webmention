@@ -53,6 +53,22 @@ class Webmentions extends Component
     }
 
     /**
+     * Gets all available webmentions for an element by type (e.g. `mention`, `like`, or `repost`)
+     *
+     * @param ElementInterface $element
+     * @param string|null $type
+     * @return Webmention[]
+     */
+    public function getWebmentionsForElementByType(ElementInterface $element, ?string $type = null): array
+    {
+        return Webmention::find()
+            ->targetId($element->id)
+            ->targetSiteId($element::isLocalized() ? $element->siteId : null)
+            ->type($type)
+            ->all();
+    }
+
+    /**
      * Check a webmention for typical structures of a brid.gy webmention and update $results array accordingly.
      *
      * @param array $result

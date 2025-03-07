@@ -53,6 +53,18 @@ class WebmentionVariable
     }
 
     /**
+     * Gets all available webmentions for an element by type (e.g. `mention`, `like`, or `repost`)
+     *
+     * @param ElementInterface $element
+     * @param string|null $type
+     * @return Webmention[]
+     */
+    public function getWebmentionsForElementByType(ElementInterface $element, ?string $type = null): array
+    {
+        return Plugin::getInstance()->webmentions->getWebmentionsForElementByType($element, $type);
+    }
+
+    /**
      * Get a specific webmention. If no webmention is found, returns null
      *
      * @param int $id
@@ -73,6 +85,11 @@ class WebmentionVariable
         return UrlHelper::siteUrl(Plugin::getInstance()->settings->endpointSlug);
     }
 
+    /**
+     * Returns the default template for showing webmentions
+     *
+     * @return Template
+     */
     public function showWebmentions(?string $url = null): Markup
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmentions.twig', [
@@ -82,6 +99,11 @@ class WebmentionVariable
         return Template::raw($html);
     }
 
+    /**
+     * Show the default webmention form template
+     *
+     * @return Template
+     */
     public function webmentionForm(?string $url = null)
     {
         $html = Craft::$app->getView()->renderTemplate('webmention/webmention-form.twig', [

@@ -1,9 +1,14 @@
 <section class="webmentions container">
   {% set element = craft.app.urlManager.getMatchedElement() %}
+  
   {% set mentions = element ? craft.webmention.getWebmentionsForElement(element) : craft.webmention.getWebmentions(url) %}
+  {% set likes = element ? craft.webmention.getWebmentionsForElementByType(element, 'like') : craft.webmention.getWebmentions(url) %}
+  {% set reposts = element ? craft.webmention.getWebmentionsForElementByType(element, 'repost') : craft.webmention.getWebmentions(url) %}
+  
   {% set nummentions = mentions|length %}
   {% set likescounter = 0 %}
   {% set repostscounter = 0 %}
+  
   <h2>{{ nummentions }} Webmention{% if nummentions != 1 %}s{% endif %}</h2>
   {% if nummentions == 0 %}<p>¯\_(ツ)_/¯</p>
   {% else %}
@@ -37,19 +42,14 @@
               {{ block.text }}
             {% endif %}
           </section>
-          {# <section class="webmention__meta">
-				<cite>
-					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
-				</cite>
-			</section> #}
         </article>
       {% endif %}
     {% endfor %}
 
-    {% for block in mentions %}
+    {% for block in likes %}
       {% if block.type == "like" %}
         {% if likescounter == 0 %}
-          <h3>Likes</h3>
+          <h3>{{ likes|length }} Like{% if likes|length > 1 %}s{% endif %}</h3>
           {% set likescounter = 1 %}
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
@@ -68,20 +68,15 @@
               </a></figcaption>
             </a>
           </figure>
-          {# <section class="webmention__meta">
-				<cite>
-					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
-				</cite>
-			</section> #}
         </article>
       {% endif %}
     {% endfor %}
 
-    {% for block in mentions %}
+    {% for block in reposts %}
       {% if block.type == "repost" %}
         {% if repostscounter == 0 %}
-          <h3>Reposts</h3>
-          {% set repostscounter = 1 %}
+        <h3>{{ reposts|length }} Repost{% if reposts|length > 1 %}s{% endif %}</h3>
+        {% set repostscounter = 1 %}
         {% endif %}
         <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
           <figure class="p-author h-card">
@@ -91,13 +86,14 @@
                      alt="Photo of {{ block.authorName }}">
               </a>
             {% endif %}
-            <figcaption class="webmention__author-name p-name"><a
-                  href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
-                {% if block.published is not null %}
-                  <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
-                {% endif %}
-              </a></figcaption>
-            </a>
+            <figcaption class="webmention__author-name p-name">
+              <a href="{{ block.authorUrl }}">{{ block.authorName }}</a>
+              {% if block.published is not null %}
+              <a href="{{ block.hEntryUrl }}" class="u-url">
+                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+              </a>
+              {% endif %}
+              </figcaption>
           </figure>
           <section class="webmention__body">
             {% if block.name and block.type != 'like' %}
@@ -107,15 +103,7 @@
                 </h3>
               </a>
             {% endif %}
-            {# {% if block.text and block.text != '0' %}
-					{{block.text}}
-				{% endif %} #}
           </section>
-          {# <section class="webmention__meta">
-				<cite>
-					<a href="{{block.source}}"><time datetime="{{block.published}}">{{block.published.format('j F Y')}}</time></a>
-				</cite>
-			</section> #}
         </article>
       {% endif %}
     {% endfor %}
