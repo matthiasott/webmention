@@ -160,7 +160,7 @@ class Webmention extends Element
         if ($shorten) {
             $label = parse_url($this->source, PHP_URL_HOST);
         } else {
-            $label = preg_replace('/^https?:\/\//', '', $this->target);
+            $label = preg_replace('/^https?:\/\//', '', $this->source);
         }
 
         return Html::a(Html::encode($label), $this->source, ['target' => '_blank']);
