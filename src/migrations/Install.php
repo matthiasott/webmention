@@ -27,7 +27,7 @@ class Install extends Migration
             'name' => $this->string(),
             'host' => $this->string(),
             'type' => $this->string(),
-            'text' => $this->string(),
+            'text' => $this->text(),
             'hEntryUrl' => $this->string(),
             'rsvp' => $this->string(),
             'properties' => $this->json(),
