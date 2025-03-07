@@ -19,4 +19,13 @@ class ElementBehavior extends Behavior
     {
         return Plugin::getInstance()->webmentions->getWebmentionsForElement($this->owner);
     }
+
+    /**
+     * @param string|null $type
+     * @return Webmention[]
+     */
+    public function getWebmentionsByType(?string $type = null): array
+    {
+        return Plugin::getInstance()->webmentions->getWebmentionsForElementByType($this->owner, $type);
+    }
 }

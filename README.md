@@ -76,9 +76,15 @@ To fetch all Webmentions for an element, you can call `getWebmentions()` on the 
 {% endfor %}
 ```
 
+Amd if you want to fetch only Webmentions of a certain type, like comments, likes, or reposts, you can call `getWebmentionsByType()` on the element:
+
+{% for webmention in element.getWebmentionsByType('like') %}
+  …
+{% endfor %}
+
 ### Display a Webmention form for the current URL
-You can output a form in your entry template that provides the user with the opportunity to send you the URL of a response.
-Simply use this helper:
+You can output a form in your entry template that lets people directly send you the URL of a response.
+For this, use this helper:
 
 ```twig
 {{ craft.webmention.webmentionForm() }}
