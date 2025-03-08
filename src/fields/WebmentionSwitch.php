@@ -21,6 +21,11 @@ class WebmentionSwitch extends Field
         return 'bool';
     }
 
+    public static function icon(): string
+    {
+        return 'toggle-on';
+    }
+
     public static function queryCondition(array $instances, mixed $value, array &$params): array
     {
         $valueSql = static::valueSql($instances);
