@@ -84,10 +84,6 @@ class Webmentions extends Component
             !empty($src) &&
             (preg_match('!http(.*?)://brid-gy.appspot.com!', $src) || preg_match('!http(.*?)://brid.gy!', $src))
         ) {
-            // Is it Twitter?
-            if (!empty($result['url']) and preg_match('!http(.*?)://twitter.com/(.*?)/status!', $result['url'])) {
-                $result['site'] = 'twitter';
-            }
             // Is it The Facebook?
             if (!empty($result['url']) and preg_match('!http(.*?)facebook.com!', $result['url'])) {
                 $result['site'] = 'facebook';
@@ -96,16 +92,35 @@ class Webmentions extends Component
             if (!empty($result['url']) and preg_match('!http(.*?)instagram.com!', $result['url'])) {
                 $result['site'] = 'instagram';
             }
-            // Or even G+?
-            if (!empty($result['url']) and preg_match('!http(.*?)plus.google.com!', $result['url'])) {
-                $result['site'] = 'googleplus';
-            }
             // Flickr?
             if (!empty($result['url']) and preg_match('!http(.*?)flickr.com!', $result['url'])) {
                 $result['site'] = 'flickr';
             }
 
-            // Get the type of mention from brid.gy URL
+            // Get the site from Bridgy's webmention source URLs
+            if (preg_match('/facebook/', $src)) {
+                $result['site'] = 'facebook';
+            }
+            if (preg_match('/flickr/', $src)) {
+                $result['site'] = 'flickr';
+            }
+            if (preg_match('/github/', $src)) {
+                $result['site'] = 'github';
+            }
+            if (preg_match('/instagram/', $src)) {
+                $result['site'] = 'instagram';
+            }
+            if (preg_match('/mastodon/', $src)) {
+                $result['site'] = 'mastodon';
+            }
+            if (preg_match('/bluesky/', $src)) {
+                $result['site'] = 'bluesky';
+            }
+            if (preg_match('/reddit/', $src)) {
+                $result['site'] = 'reddit';
+            }
+
+            // Get the type of mention from Bridgy's webmention source URLs
             if (preg_match('/post/', $src)) {
                 $result['type'] = 'mention';
             }
