@@ -10,6 +10,11 @@
 - Added the `webmention/example-template` CLI command.
 - Added the `webmention/update` CLI command.
 - Added the `webmention/update-avatars` CLI command.
+- Added the `getWebmentions()` and `getWebmentionsByType()` element behaviors
+- Added support for the Bridgy site types `mastodon`, `bluesky`, `github`, and `reddit`.
+- Added a new icon based on Paul Robert Lloyd’s IndieWeb icon designs
+- Fixed the regex that scans for URLs in entries so that it now correctly handles Markdown links
+- Lots of smaller bugfixes and improvements
 
 ## 0.3.1 - 2017-04-02
 - Changed the retrieval method for links within an entry to fix a bug where a very long article with many links would lead to a PHP execution timeout

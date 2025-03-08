@@ -48,7 +48,7 @@ And/or you can set an HTTP Link header by adding this line to your main layout t
 {% header "Link: <" ~ craft.webmention.endpointUrl ~ ">; rel=\"webmention\"" %}
 ```
 
-The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your site's endoint route. The Twig template for the Webmention endpoint will extend your standard template and is copied to `craft/templates/webmention/_index.html` on install. You can then adjust the template to your needs. Note: Even if you define a different route for the endpoint, the plugin will still look for the template in this folder.
+The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your site’s endoint route. The Twig template for the Webmention endpoint will extend your standard template and is copied to `craft/templates/webmention/_index.html` on install. You can then adjust the template to your needs. Note: Even if you define a different route for the endpoint, the plugin will still look for the template in this folder.
 
 ### Displaying Webmentions
 To output all Webmentions for the current request URL, you can use the following helper in your templates:
@@ -76,7 +76,7 @@ To fetch all Webmentions for an element, you can call `getWebmentions()` on the 
 {% endfor %}
 ```
 
-Amd if you want to fetch only Webmentions of a certain type, like comments, likes, or reposts, you can call `getWebmentionsByType()` on the element:
+And if you want to fetch only Webmentions of a certain type, like comments, likes, or reposts, you can call `getWebmentionsByType()` on the element:
 
 {% for webmention in element.getWebmentionsByType('like') %}
   …
@@ -149,32 +149,26 @@ The following attributes are looked up:
 * `hEntryUrl`
 * `host`
 * `type`
+* `properties`
 
 Lastly, the Webmention record is saved to the database. Already existing Webmentions (which is determined by a comparison of the `source` and `target` of the POST request) are updated in the database.
 
 ### XSS Protection
-To prevent Cross Site Scripting (XSS) attacks, the HTML of the source first gets decoded (which for example converts `&#00060script>` into `<script>`) and is then purified with [CHTMLPurifier](http://www.yiiframework.com/doc/api/CHtmlPurifier), Yii’s wrapper for [HTML Purifier](http://htmlpurifier.org/), which “removes all malicious code with a thoroughly audited, secure yet permissive whitelist”.
+To prevent Cross Site Scripting (XSS) attacks, the HTML of the source is purified with HTMLPurifier, which “removes all malicious code with a thoroughly audited, secure yet permissive whitelist”.
 
-### Brid.gy
+### Bridgy
 
-You can use Brid.gy for receiving Webmentions for posts, comments, retweets, likes, etc. from Twitter, Instagram, Facebook, Flickr, and Google+. This plugin will understand the Webmention and set the 'type' of the Webmention accordingly. So if someone retweets a tweet with a URL you shared, the Webmention will be of the type 'retweet'. To determine the interaction type, the plugin looks at the brid.gy URL format, for more information on the different types of URLs visit [the section about source URLs on the brid.gy website](https://brid.gy/about#source-urls).
+You can use [Bridgy](https://brid.gy) for receiving Webmentions for posts, comments, reposts, likes, etc. from Mastodon, Bluesky, GitHub, Reddit, Instagram, Flickr, and more. This plugin will understand the Webmention and set the `type` of the Webmention accordingly. So if someone reposts a social media post with a URL you shared, the Webmention will be of the type `repost`. To determine the interaction type, the plugin looks at the Bridgy URL format, for more information on the different types of URLs visit [the section about source URLs on the Bridgy website](https://brid.gy/about#source-urls).
 
-If you don't use Brid.gy you can easily deactivate the parsing in the plugin settings.
+If you don’t use Bridgy you can easily deactivate the parsing in the plugin settings.
 
 ### HTTP Responses
 
-The Webmention plugin validates and processes the request and then returns HTTP status codes for certain errors or the successful processing of the Webmention:
-
--  If the URLs provided for `source` and `target` do not match an http(s) scheme, a **400 Bad Request** status code is returned.
--  If the specified target URL is not found, a **400 Bad Request** status code is returned.
--  Also, if the provided `source` is not linking back to `target`, the answer will be a resounding **400 Bad Request**!
--  On success, the plugin responds with a status of **200 OK**.
-
-**Note: Currently, the plugin does not process the Webmention verification asynchronously.**
+The Webmention plugin validates and processes all requests **asynchronously** via [Craft queue jobs](https://craftcms.com/docs/5.x/extend/queue-jobs.html). This guarantees that your site remains responsive, even when a larger amount of webmention requests needs to be handled. Because the webmention processing happens asynchronously, the only direct HTTP response sent by the plugin is a confident **202 Accepted** status code.
 
 ## Roadmap
-- Provide an easy way to change how Webmentions are displayed (e. g. grouping y/n)
-- …
+- Add a more GDPR-friendly “data economy mode” that collects webmentions from Bridgy and other social media sources without saving names and avatars but still allows for showing the *amount* of likes, reposts, etc.
+- Improve how replies are handled and displayed, for example in a chat-like conversation in response to a post
 
 ## Updating from v0.3
 To update from Webmention 0.3 on Craft 2, do the following after upgrading Craft CMS:
@@ -211,7 +205,7 @@ To update from Webmention 0.3 on Craft 2, do the following after upgrading Craft
 > ```
 
 ## Thank You!
-Thanks to everyone who helped me setting this up:
+Thanks to everyone who helped setting this up:
 – [Jason Garber](https://sixtwothree.org/) (@jgarber) for his [webmention client plugin](https://github.com/jgarber623/craft-webmention-client) and the kind permission to reuse parts of the code when implementing the sending functionality.
 - [Aaron Parecki](https://aaronparecki.com/) (@aaronpk) for support and feedback – and also for the great work he does related to Webmention.
 - [Bastian Allgeier](http://bastianallgeier.com) (@bastianallgeier) for allowing me to get highly inspired by his [Kirby Webmentions Plugin](https://github.com/bastianallgeier/kirby-webmentions)
