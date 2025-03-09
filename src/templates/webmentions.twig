@@ -39,7 +39,7 @@
               </a>
             {% endif %}
             {% if block.text and block.text != '0' %}
-              {{ block.text }}
+              {{ block.text|purify|raw }}
             {% endif %}
           </section>
         </article>
