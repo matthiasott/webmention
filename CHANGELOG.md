@@ -1,6 +1,6 @@
-# Release Notes for CKEditor for Craft CMS
+# Release Notes for Webmention for Craft CMS
 
-## Unreleased
+## 1.0 – 2025-03-09
 - Added Craft 5 compatibility.
 - Added the “Avatar Location” setting.
 - Avatar assets are now accessible via `webmention.avatar`.

@@ -168,7 +168,7 @@ The Webmention plugin validates and processes all requests **asynchronously** vi
 
 ## Roadmap
 - Add a more GDPR-friendly “data economy mode” that collects webmentions from Bridgy and other social media sources without saving names and avatars but still allows for showing the *amount* of likes, reposts, etc.
-- Improve how replies are handled and displayed, for example in a chat-like conversation in response to a post
+- Improve how replies are handled and displayed, for example in a chat-like conversation in response to a post.
 
 ## Updating from v0.3
 To update from Webmention 0.3 on Craft 2, do the following after upgrading Craft CMS:
@@ -224,6 +224,6 @@ Matthias Ott
 <mail@matthiasott.com>  
 <https://matthiasott.com>
 
-Brandon Kelly
-<brandon@pixelandtonic.com>
+Brandon Kelly   
+<brandon@pixelandtonic.com>   
 <https://brandonkelly.io>
