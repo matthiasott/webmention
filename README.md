@@ -26,12 +26,6 @@ You can install this plugin from Craft’s in-app Plugin Store.
 
 Go to the Plugin Store in your project’s Control Panel and search for “Webmention”, then click on the “Install” button in the sidebar.
 
-After installing, run the following CLI command to copy an example webmention submission template into your project’s `templates/` directory:
-
-```sh
-php craft webmention/example-template
-```
-
 > [!NOTE]  
 > If you’re updating from Webmention v0.3, [follow these instructions](#updating-from-v03) as well.
 
@@ -48,7 +42,13 @@ And/or you can set an HTTP Link header by adding this line to your main layout t
 {% header "Link: <" ~ craft.webmention.endpointUrl ~ ">; rel=\"webmention\"" %}
 ```
 
-The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your site’s endoint route. The Twig template for the Webmention endpoint will extend your standard template and is copied to `craft/templates/webmention/_index.html` on install. You can then adjust the template to your needs. Note: Even if you define a different route for the endpoint, the plugin will still look for the template in this folder.
+The plugin comes with a „human-friendly“ endpoint that will present a form with input fields for `source` and `target` to users visiting your site’s endoint route. The Twig template for the Webmention endpoint will extend your standard template. Run the following CLI command to copy an example webmention endpoint template into your project’s `templates/` directory:
+
+```sh
+php craft webmention/example-template
+```
+
+You can then adjust the template to your needs.
 
 ### Displaying Webmentions
 To output all Webmentions for the current request URL, you can use the following helper in your templates:
