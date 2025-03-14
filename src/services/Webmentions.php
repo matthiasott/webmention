@@ -398,8 +398,25 @@ class Webmentions extends Component
         }
 
         $hashedFileName = sha1(pathinfo($url, PATHINFO_FILENAME));
+
         $fileExtension = (pathinfo($url, PATHINFO_EXTENSION));
+
+        // In case the file doesn’t have an extension – which is the case for Bluesky avatars – we need to get it via the MIME type
+        if (empty($fileExtension)) {
+            // Get the MIME type from image type
+            $mime_type = image_type_to_mime_type(exif_imagetype($url));
+            
+            if(!empty($mime_type)) {
+                // get the right extension
+                $fileExtension = FileHelper::getExtensionByMimeType($mime_type);
+            } else {
+                // if it all fails, let’s just assume it is a JPG for now
+                $fileExtension = "jpg";
+            }
+        }
+
         $fileName = $hashedFileName . "." . $fileExtension;
+
         $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), $fileName);
         FileHelper::writeToFile($tempPath, (string)$response->getBody());
 
