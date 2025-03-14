@@ -70,10 +70,13 @@ class Webmention extends Element
     {
         return [
             'authorName' => Craft::t('webmention', 'Author'),
+            'avatarId' => Craft::t('webmention', 'Author Avatar'),
             'text' => Craft::t('webmention', 'Text'),
             'source' => Craft::t('webmention', 'Source'),
             'target' => Craft::t('webmention', 'Target'),
             'type' => Craft::t('webmention', 'Type'),
+            'host' => Craft::t('webmention', 'Host'),
+            'properties' => Craft::t('webmention', 'Properties'),
             'published' => Craft::t('webmention', 'Published on'),
             ...parent::defineTableAttributes(),
         ];
