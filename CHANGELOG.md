@@ -1,5 +1,9 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.0.1 – 2025-03-15
+- Added `avatarId`, `host`, and `properties` as optional table attributes
+- Fixed Bluesky (via Bridgy) avatars: if an avatar image has no extension, the extension is now determined by the respective MIME type
+
 ## 1.0.0 – 2025-03-09
 - Added Craft 5 compatibility.
 - Added the “Avatar Location” setting.
