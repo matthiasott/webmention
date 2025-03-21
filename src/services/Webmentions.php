@@ -306,15 +306,24 @@ class Webmentions extends Component
         if (empty($result['site'])) {
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
-        // If no author photo is defined, check gravatar for image
+        
+        // Author photo
+        
         if (!empty($result['author']['photo'])) {
+            Craft::info('Not empty', 'webmention');
             if (isset($result['author']['photo']['value'])) {
                 $result['author']['photo'] = $result['author']['photo']['value'];
             }
         } elseif ($representative) {
-            if ($representative['properties']['photo'][0]) {
+            // Sometimes the structure of the parsed h-card differs
+            if ($representative['properties']['photo'][0] && is_string($representative['properties']['photo'][0])) {
+                // The photo can be the first element in ['photo']
                 $result['author']['photo'] = $representative['properties']['photo'][0];
+            } elseif ($representative['properties']['photo'][0]['value'] && is_string($representative['properties']['photo'][0]['value'])) {
+                 // Alternatively, the photo can be the ['value'] key of the array inside ['photo']
+                $result['author']['photo'] = $representative['properties']['photo'][0]['value'];
             } else {
+                // If no author photo is defined, check gravatar for image
                 $email = $representative['properties']['email'][0];
                 if ($email) {
                     $email = rtrim(str_replace('mailto:', '', $email));
@@ -325,8 +334,7 @@ class Webmentions extends Component
         }
 
         // Author photo should be saved locally to avoid exploits.
-        // So if an author photo is available get the image and save it to assets
-
+        // If an author photo is available get the image and save it to assets
         if (!empty($result['author']['photo'])) {
             $asset = $this->saveAsset($result['author']['photo']);
             if ($asset) {
