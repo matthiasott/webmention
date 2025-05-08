@@ -88,7 +88,7 @@ class WebmentionVariable
     /**
      * Returns the default template for showing webmentions
      *
-     * @return Template
+     * @return Markup
      */
     public function showWebmentions(?string $url = null): Markup
     {
@@ -102,7 +102,7 @@ class WebmentionVariable
     /**
      * Show the default webmention form template
      *
-     * @return Template
+     * @return Markup
      */
     public function webmentionForm(?string $url = null)
     {
