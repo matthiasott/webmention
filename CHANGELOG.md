@@ -1,5 +1,8 @@
 # Release Notes for Webmention for Craft CMS
 
+## Unreleased
+- Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.
+
 ## 1.0.1 – 2025-03-15
 - Added `avatarId`, `host`, and `properties` as optional table attributes
 - Fixed Bluesky (via Bridgy) avatars: if an avatar image has no extension, the extension is now determined by the respective MIME type

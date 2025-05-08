@@ -19,7 +19,7 @@ use DateTime;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Collection;
 use LitEmoji\LitEmoji;
@@ -187,7 +187,7 @@ class Webmentions extends Component
         $client = Craft::createGuzzleClient();
         try {
             $response = $client->get($src);
-        } catch (RequestException $e) {
+        } catch (GuzzleException $e) {
             return false;
         }
         $html = (string)$response->getBody();
@@ -216,7 +216,7 @@ class Webmentions extends Component
                 $head = $client->head($linkUrl, [
                     RequestOptions::ALLOW_REDIRECTS => false,
                 ]);
-            } catch (RequestException) {
+            } catch (GuzzleException) {
                 continue;
             }
 
@@ -401,7 +401,7 @@ class Webmentions extends Component
         $client = Craft::createGuzzleClient();
         try {
             $response = $client->get($url);
-        } catch (RequestException) {
+        } catch (GuzzleException) {
             return null;
         }
 
