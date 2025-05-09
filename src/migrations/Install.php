@@ -13,22 +13,25 @@ class Install extends Migration
         $this->safeDown();
 
         $tableName = Webmention::tableName();
+
+        // 3072 / 4 (bytes per char) / 2 (target, source) = 384,
+        // the maximum size we can safely allow in URLs w/o hitting MySQL's max index size limit
         $this->createTable($tableName, [
             'id' => $this->integer()->notNull(),
-            'source' => $this->string()->notNull(),
-            'target' => $this->string()->notNull(),
+            'source' => $this->string(384)->notNull(),
+            'target' => $this->string(384)->notNull(),
             'targetId' => $this->integer(),
             'targetSiteId' => $this->integer(),
-            'avatarUrl' => $this->string(),
+            'avatarUrl' => $this->string(384),
             'avatarId' => $this->integer(),
             'authorName' => $this->string(),
-            'authorUrl' => $this->string(),
+            'authorUrl' => $this->string(384),
             'published' => $this->dateTime(),
             'name' => $this->string(),
             'host' => $this->string(),
             'type' => $this->string(),
             'text' => $this->text(),
-            'hEntryUrl' => $this->string(),
+            'hEntryUrl' => $this->string(384),
             'rsvp' => $this->string(),
             'properties' => $this->json(),
             'PRIMARY KEY([[id]])',
