@@ -2,7 +2,6 @@
 
 namespace matthiasott\webmention\migrations;
 
-use Craft;
 use craft\db\Migration;
 use matthiasott\webmention\records\Webmention;
 

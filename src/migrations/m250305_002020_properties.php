@@ -2,12 +2,7 @@
 
 namespace matthiasott\webmention\migrations;
 
-use Craft;
 use craft\db\Migration;
-use craft\db\Query;
-use craft\db\Table;
-use craft\helpers\Db;
-use matthiasott\webmention\Plugin;
 use matthiasott\webmention\records\Webmention as WebmentionRecord;
 
 /**

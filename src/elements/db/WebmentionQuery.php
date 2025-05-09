@@ -135,7 +135,7 @@ class WebmentionQuery extends ElementQuery
             'webmentions.host',
             'webmentions.type',
             'webmentions.rsvp',
-            'webmentions.properties'
+            'webmentions.properties',
         ]);
 
         if ($this->authorName) {

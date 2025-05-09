@@ -318,7 +318,7 @@ class Webmentions extends Component
                 // The photo can be the first element in ['photo']
                 $result['author']['photo'] = $representative['properties']['photo'][0];
             } elseif ($representative['properties']['photo'][0]['value'] && is_string($representative['properties']['photo'][0]['value'])) {
-                 // Alternatively, the photo can be the ['value'] key of the array inside ['photo']
+                // Alternatively, the photo can be the ['value'] key of the array inside ['photo']
                 $result['author']['photo'] = $representative['properties']['photo'][0]['value'];
             } else {
                 // If no author photo is defined, check gravatar for image
@@ -412,7 +412,7 @@ class Webmentions extends Component
             // Get the MIME type from image type
             $mime_type = image_type_to_mime_type(exif_imagetype($url));
             
-            if(!empty($mime_type)) {
+            if (!empty($mime_type)) {
                 // get the right extension
                 $fileExtension = FileHelper::getExtensionByMimeType($mime_type);
             } else {
