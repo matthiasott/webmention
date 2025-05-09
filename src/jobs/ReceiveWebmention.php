@@ -33,7 +33,6 @@ class ReceiveWebmention extends BaseJob
             $webmention = $service->parseWebmention($html, $this->source, $this->target);
             if (!$webmention) {
                 throw new Exception('Job canceled. Unable to parse webmention.');
-                return;
             }
 
             Craft::$app->getElements()->saveElement($webmention);
