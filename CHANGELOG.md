@@ -1,6 +1,7 @@
 # Release Notes for Webmention for Craft CMS
 
 ## Unreleased
+- `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
 - Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.
 
 ## 1.0.1 – 2025-03-15
