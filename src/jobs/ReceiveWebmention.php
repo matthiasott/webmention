@@ -4,6 +4,7 @@ namespace matthiasott\webmention\jobs;
 
 use Craft;
 use craft\queue\BaseJob;
+use yii\base\Exception;
 use matthiasott\webmention\Plugin;
 
 class ReceiveWebmention extends BaseJob
@@ -18,19 +19,29 @@ class ReceiveWebmention extends BaseJob
 
     public function execute($queue): void
     {
-        // Validate first
-        $service = Plugin::getInstance()->webmentions;
-        $html = $service->validateWebmention($this->source, $this->target);
+        try {
 
-        if (!$html) {
-            return;
+            // Validate first
+            $service = Plugin::getInstance()->webmentions;
+            $html = $service->validateWebmention($this->source, $this->target);
+
+            if (!$html) {
+                Craft::info('FALSE!', 'webmention');
+                throw new Exception('Job canceled. No backlink found in source.');
+            }
+
+            $webmention = $service->parseWebmention($html, $this->source, $this->target);
+            if (!$webmention) {
+                throw new Exception('Job canceled. Unable to parse webmention.');
+                return;
+            }
+
+            Craft::$app->getElements()->saveElement($webmention);
+
+        } catch (Exception $e) {
+            Craft::error('Job failed: ' . $e->getMessage(), __METHOD__);
+            throw $e;
         }
 
-        $webmention = $service->parseWebmention($html, $this->source, $this->target);
-        if (!$webmention) {
-            return;
-        }
-
-        Craft::$app->getElements()->saveElement($webmention);
     }
 }
