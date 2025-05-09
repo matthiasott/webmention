@@ -288,9 +288,7 @@ class Webmentions extends Component
 
         // If author name is empty use the one from the representative h-card
         if (empty($result['author']['name'])) {
-            if ($representative) {
-                $result['author']['name'] = $representative['properties']['name'][0];
-            }
+            $result['author']['name'] = $representative['properties']['name'][0] ?? $representative['properties']['nickname'][0] ?? null;
         }
         // If author url is empty use the one from the representative h-card
         if (empty($result['author']['url'])) {
