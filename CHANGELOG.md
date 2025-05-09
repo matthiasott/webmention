@@ -4,6 +4,9 @@
 - `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
 - Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.
 
+## 1.0.2 – 2025-03-21
+- Fixed a bug where getting the the avatar photo from the parsed representative h-card would fail because the URL was the value inside of an array instead of being a string. Now the plugin supports both cases.
+
 ## 1.0.1 – 2025-03-15
 - Added `avatarId`, `host`, and `properties` as optional table attributes
 - Fixed Bluesky (via Bridgy) avatars: if an avatar image has no extension, the extension is now determined by the respective MIME type
