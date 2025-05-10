@@ -1,5 +1,8 @@
 # Release Notes for Webmention for Craft CMS
 
+## Unreleased
+- Improved performance by automatically eager-loading avatars the first time `getAvatar()` is called. ([#13](https://github.com/matthiasott/webmention/pull/13))
+
 ## 1.0.3 – 2025-05-09
 - `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
 - Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.
