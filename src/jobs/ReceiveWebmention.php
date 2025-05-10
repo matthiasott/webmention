@@ -38,7 +38,6 @@ class ReceiveWebmention extends BaseJob
             Craft::$app->getElements()->saveElement($webmention);
 
         } catch (Exception $e) {
-            Craft::error('Job failed: ' . $e->getMessage(), __METHOD__);
             throw $e;
         }
 
