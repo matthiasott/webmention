@@ -8,6 +8,7 @@ use craft\base\ElementInterface;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\elements\conditions\ElementConditionInterface;
+use craft\elements\db\EagerLoadPlan;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
 use craft\helpers\Cp;
@@ -251,7 +252,17 @@ JS, [
                 return null;
             }
 
-            $this->_avatar = Craft::$app->getAssets()->getAssetById($this->avatarId) ?? false;
+            // if the webmention was queried along with others, eager-load all their avatars
+            $sameSiteElements = isset($this->id, $this->elementQueryResult)
+                ? array_filter($this->elementQueryResult, fn(self $element) => $element->siteId === $this->siteId)
+                : [];
+
+            if (count($sameSiteElements) > 1) {
+                Craft::$app->getElements()->eagerLoadElements(self::class, $sameSiteElements, ['avatar']);
+                return $this->getAvatar();
+            }
+
+            $this->setAvatar(Craft::$app->getAssets()->getAssetById($this->avatarId));
         }
 
         return $this->_avatar ?: null;
@@ -264,7 +275,7 @@ JS, [
      */
     public function setAvatar(?Asset $avatar = null): void
     {
-        $this->_avatar = $avatar;
+        $this->_avatar = $avatar ?? false;
         $this->avatarId = $avatar->id ?? null;
     }
 
@@ -332,14 +343,13 @@ JS, [
     public static function eagerLoadingMap(array $sourceElements, string $handle): array|null|false
     {
         if ($handle === 'avatar') {
-            $sourceElementIds = array_map(fn(ElementInterface $element) => $element->id, $sourceElements);
-            $map = (new Query())
-                ->select(['id as source', 'avatarId as target'])
-                ->from(WebmentionRecord::tableName())
-                ->where(['id' => $sourceElementIds])
-                ->andWhere(['not', ['avatarId' => null]])
-                ->all();
-
+            $map = [];
+            foreach ($sourceElements as $element) {
+                /** @var self $element */
+                if ($element->avatarId) {
+                    $map[] = ['source' => $element->id, 'target' => $element->avatarId];
+                }
+            }
             return [
                 'elementType' => Asset::class,
                 'map' => $map,
@@ -347,5 +357,18 @@ JS, [
         }
 
         return parent::eagerLoadingMap($sourceElements, $handle);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function setEagerLoadedElements(string $handle, array $elements, EagerLoadPlan $plan): void
+    {
+        if ($plan->handle === 'avatar') {
+            $avatar = $elements[0] ?? null;
+            $this->setAvatar($avatar);
+        } else {
+            parent::setEagerLoadedElements($handle, $elements, $plan);
+        }
     }
 }
