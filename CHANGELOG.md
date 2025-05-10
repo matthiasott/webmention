@@ -1,5 +1,8 @@
 # Release Notes for Webmention for Craft CMS
 
+## Unreleased
+- “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators.
+
 ## 1.0.3 – 2025-05-09
 - `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
 - Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.

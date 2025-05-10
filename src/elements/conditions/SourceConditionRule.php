@@ -7,6 +7,7 @@ use craft\base\conditions\BaseTextConditionRule;
 use craft\base\ElementInterface;
 use craft\elements\conditions\ElementConditionRuleInterface;
 use craft\elements\db\ElementQueryInterface;
+use craft\helpers\ArrayHelper;
 use matthiasott\webmention\elements\db\WebmentionQuery;
 use matthiasott\webmention\elements\Webmention;
 
@@ -20,6 +21,14 @@ class SourceConditionRule extends BaseTextConditionRule implements ElementCondit
     public function getExclusiveQueryParams(): array
     {
         return ['source'];
+    }
+
+    protected function operators(): array
+    {
+        $operators = parent::operators();
+        ArrayHelper::removeValue($operators, self::OPERATOR_NOT_EMPTY);
+        ArrayHelper::removeValue($operators, self::OPERATOR_EMPTY);
+        return $operators;
     }
 
     public function modifyQuery(ElementQueryInterface $query): void
