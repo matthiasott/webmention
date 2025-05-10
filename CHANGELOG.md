@@ -1,8 +1,8 @@
 # Release Notes for Webmention for Craft CMS
 
 ## Unreleased
-- Added the “Host” condition rule type.
-- “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators.
+- Added the “Host” condition rule type. ([#12](https://github.com/matthiasott/webmention/pull/12))
+- “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators. ([#12](https://github.com/matthiasott/webmention/pull/12))
 
 ## 1.0.3 – 2025-05-09
 - `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
