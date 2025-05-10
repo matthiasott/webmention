@@ -11,16 +11,16 @@ use craft\helpers\ArrayHelper;
 use matthiasott\webmention\elements\db\WebmentionQuery;
 use matthiasott\webmention\elements\Webmention;
 
-class SourceConditionRule extends BaseTextConditionRule implements ElementConditionRuleInterface
+class HostConditionRule extends BaseTextConditionRule implements ElementConditionRuleInterface
 {
     public function getLabel(): string
     {
-        return Craft::t('webmention', 'Source');
+        return Craft::t('webmention', 'Host');
     }
 
     public function getExclusiveQueryParams(): array
     {
-        return ['source'];
+        return ['host'];
     }
 
     protected function operators(): array
@@ -34,12 +34,12 @@ class SourceConditionRule extends BaseTextConditionRule implements ElementCondit
     public function modifyQuery(ElementQueryInterface $query): void
     {
         /** @var WebmentionQuery $query */
-        $query->source($this->paramValue());
+        $query->host($this->paramValue());
     }
 
     public function matchElement(ElementInterface $element): bool
     {
         /** @var Webmention $element */
-        return $this->matchValue($element->source);
+        return $this->matchValue($element->host);
     }
 }
