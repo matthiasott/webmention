@@ -1,6 +1,7 @@
 # Release Notes for Webmention for Craft CMS
 
 ## Unreleased
+- Added the “Host” condition rule type.
 - “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators.
 
 ## 1.0.3 – 2025-05-09
