@@ -4,8 +4,8 @@ namespace matthiasott\webmention\jobs;
 
 use Craft;
 use craft\queue\BaseJob;
-use yii\base\Exception;
 use matthiasott\webmention\Plugin;
+use yii\base\Exception;
 
 class ReceiveWebmention extends BaseJob
 {
@@ -36,10 +36,8 @@ class ReceiveWebmention extends BaseJob
             }
 
             Craft::$app->getElements()->saveElement($webmention);
-
         } catch (Exception $e) {
             throw $e;
         }
-
     }
 }
