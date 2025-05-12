@@ -252,6 +252,7 @@ JS, [
 
             // if the webmention was queried along with others, eager-load all their avatars
             $sameSiteElements = isset($this->id, $this->elementQueryResult)
+                /** @phpstan-ignore-next-line */
                 ? array_filter($this->elementQueryResult, fn(self $element) => $element->siteId === $this->siteId)
                 : [];
 
@@ -348,6 +349,7 @@ JS, [
                     $map[] = ['source' => $element->id, 'target' => $element->avatarId];
                 }
             }
+            /** @phpstan-ignore-next-line */
             return [
                 'elementType' => Asset::class,
                 'map' => $map,
@@ -363,6 +365,7 @@ JS, [
     public function setEagerLoadedElements(string $handle, array $elements, EagerLoadPlan $plan): void
     {
         if ($plan->handle === 'avatar') {
+            /** @var Asset|null $avatar */
             $avatar = $elements[0] ?? null;
             $this->setAvatar($avatar);
         } else {
