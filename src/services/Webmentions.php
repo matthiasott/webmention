@@ -53,6 +53,21 @@ class Webmentions extends Component
     }
 
     /**
+     * Returns the total webmentions for an element
+     *
+     * @param ElementInterface $element
+     * @return int
+     * @since 1.0.4
+     */
+    public function getTotalWebmentionsForElement(ElementInterface $element): int
+    {
+        return Webmention::find()
+            ->targetId($element->id)
+            ->targetSiteId($element::isLocalized() ? $element->siteId : null)
+            ->count();
+    }
+
+    /**
      * Gets all available webmentions for an element by type (e.g. `mention`, `like`, or `repost`)
      *
      * @param ElementInterface $element
@@ -66,6 +81,23 @@ class Webmentions extends Component
             ->targetSiteId($element::isLocalized() ? $element->siteId : null)
             ->type($type)
             ->all();
+    }
+
+    /**
+     * Returns the total webmentions for an element by type (e.g. `mention`, `like`, or `repost`)
+     *
+     * @param ElementInterface $element
+     * @param string|null $type
+     * @return int
+     * @since 1.0.4
+     */
+    public function getTotalWebmentionsForElementByType(ElementInterface $element, ?string $type = null): int
+    {
+        return Webmention::find()
+            ->targetId($element->id)
+            ->targetSiteId($element::isLocalized() ? $element->siteId : null)
+            ->type($type)
+            ->count();
     }
 
     /**

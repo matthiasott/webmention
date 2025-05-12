@@ -17,7 +17,21 @@ class ElementBehavior extends Behavior
      */
     public function getWebmentions(): array
     {
+        if ($this->owner->hasEagerLoadedElements('webmentions')) {
+            /** @phpstan-ignore-next-line */
+            return $this->owner->getEagerLoadedElements('webmentions')->all();
+        }
+
         return Plugin::getInstance()->webmentions->getWebmentionsForElement($this->owner);
+    }
+
+    /**
+     * @return int
+     */
+    public function getTotalWebmentions(): int
+    {
+        $count = $this->owner->getEagerLoadedElementCount('webmentions');
+        return $count ?? Plugin::getInstance()->webmentions->getTotalWebmentionsForElement($this->owner);
     }
 
     /**
@@ -26,6 +40,29 @@ class ElementBehavior extends Behavior
      */
     public function getWebmentionsByType(?string $type = null): array
     {
+        if ($type === null) {
+            return $this->getWebmentions();
+        }
+
+        if ($this->owner->hasEagerLoadedElements("webmentions:$type")) {
+            /** @phpstan-ignore-next-line */
+            return $this->owner->getEagerLoadedElements("webmentions:$type")->all();
+        }
+
         return Plugin::getInstance()->webmentions->getWebmentionsForElementByType($this->owner, $type);
+    }
+
+    /**
+     * @param string|null $type
+     * @return int
+     */
+    public function getTotalWebmentionsByType(?string $type = null): int
+    {
+        if ($type === null) {
+            return $this->getTotalWebmentions();
+        }
+
+        $count = $this->owner->getEagerLoadedElementCount("webmentions:$type");
+        return $count ?? Plugin::getInstance()->webmentions->getTotalWebmentionsForElementByType($this->owner, $type);
     }
 }

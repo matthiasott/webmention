@@ -9,9 +9,11 @@ use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\console\Controller as ConsoleController;
 use craft\console\controllers\ResaveController;
+use craft\db\Query;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineConsoleActionsEvent;
+use craft\events\DefineEagerLoadingMapEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -24,6 +26,7 @@ use matthiasott\webmention\behaviors\ElementBehavior;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\models\Settings;
+use matthiasott\webmention\records\Webmention as WebmentionRecord;
 use matthiasott\webmention\services\Sender;
 use matthiasott\webmention\services\Webmentions;
 use matthiasott\webmention\variables\WebmentionVariable;
@@ -97,6 +100,18 @@ class Plugin extends BasePlugin
             $event->behaviors['webmention'] = ElementBehavior::class;
         });
 
+        Event::on(Element::class, Element::EVENT_DEFINE_EAGER_LOADING_MAP, function(DefineEagerLoadingMapEvent $event) {
+            if ($event->handle === 'webmentions') {
+                $event->elementType = Webmention::class;
+                $event->map = $this->webmentionsMap($event);
+                $event->handled = true;
+            } elseif (str_starts_with($event->handle, 'webmentions:')) {
+                $event->elementType = Webmention::class;
+                $event->map = $this->webmentionsMap($event, substr($event->handle, 12));
+                $event->handled = true;
+            }
+        });
+
         Event::on(ResaveController::class, ConsoleController::EVENT_DEFINE_ACTIONS, static function(DefineConsoleActionsEvent $e) {
             $e->actions['webmentions'] = [
                 'action' => function(): int {
@@ -119,6 +134,35 @@ class Plugin extends BasePlugin
                 dateFormat: 'Y-m-d H:i:s',
             ),
         ]);
+    }
+
+    private function webmentionsMap(DefineEagerLoadingMapEvent $event, ?string $type = null): array
+    {
+        // Get the source element IDs
+        $sourceElementIds = [];
+
+        foreach ($event->sourceElements as $sourceElement) {
+            $sourceElementIds[] = $sourceElement->id;
+        }
+
+        $query = (new Query())
+            ->select([
+                'source' => 'webmentions.targetId',
+                'target' => 'webmentions.id',
+            ])
+            ->from(['webmentions' => WebmentionRecord::tableName()])
+            ->where(['webmentions.targetId' => $sourceElementIds]);
+
+        $firstElement = reset($event->sourceElements);
+        if ($firstElement::isLocalized()) {
+            $query->andWhere(['webmentions.targetSiteId' => $firstElement->siteId]);
+        }
+
+        if ($type !== null) {
+            $query->andWhere(['webmentions.type' => $type]);
+        }
+
+        return $query->all();
     }
 
     public function getCpNavItem(): ?array
