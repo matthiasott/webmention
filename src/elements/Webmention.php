@@ -4,8 +4,6 @@ namespace matthiasott\webmention\elements;
 
 use Craft;
 use craft\base\Element;
-use craft\base\ElementInterface;
-use craft\db\Query;
 use craft\elements\Asset;
 use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\EagerLoadPlan;
