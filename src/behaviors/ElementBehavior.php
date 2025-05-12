@@ -17,6 +17,11 @@ class ElementBehavior extends Behavior
      */
     public function getWebmentions(): array
     {
+        if ($this->owner->hasEagerLoadedElements('webmentions')) {
+            /** @phpstan-ignore-next-line */
+            return $this->owner->getEagerLoadedElements('webmentions')->all();
+        }
+
         return Plugin::getInstance()->webmentions->getWebmentionsForElement($this->owner);
     }
 
@@ -26,6 +31,15 @@ class ElementBehavior extends Behavior
      */
     public function getWebmentionsByType(?string $type = null): array
     {
+        if ($type === null) {
+            return $this->getWebmentions();
+        }
+
+        if ($this->owner->hasEagerLoadedElements("webmentions:$type")) {
+            /** @phpstan-ignore-next-line */
+            return $this->owner->getEagerLoadedElements("webmentions:$type")->all();
+        }
+
         return Plugin::getInstance()->webmentions->getWebmentionsForElementByType($this->owner, $type);
     }
 }
