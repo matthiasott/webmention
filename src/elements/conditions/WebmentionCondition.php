@@ -12,6 +12,7 @@ class WebmentionCondition extends ElementCondition
             ...parent::selectableConditionRules(),
             AuthorNameConditionRule::class,
             AuthorUrlConditionRule::class,
+            HostConditionRule::class,
             PublishedConditionRule::class,
             SourceConditionRule::class,
             TargetConditionRule::class,

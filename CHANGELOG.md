@@ -2,11 +2,14 @@
 
 ## Unreleased
 - Improved performance by automatically eager-loading avatars the first time `getAvatar()` is called. ([#13](https://github.com/matthiasott/webmention/pull/13))
+- Added the “Host” condition rule type. ([#12](https://github.com/matthiasott/webmention/pull/12))
+- “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators. ([#12](https://github.com/matthiasott/webmention/pull/12))
 
 ## 1.0.3 – 2025-05-09
 - `authorName` values now use the h-card’s `nickname` property as a fallback. ([#10](https://github.com/matthiasott/webmention/pull/10))
 - Fixed a bug where webmention validation wasn’t catching `ConnectException` errors.
 - Fixed a bug where jobs for webmentions whithout a valid backlink to the target got stuck in the queue.
+- Fixed a bug where Bluesky source URLs from Brid.gy weren’t always being stored in their entirety.
 
 ## 1.0.2 – 2025-03-21
 - Fixed a bug where getting the the avatar photo from the parsed representative h-card would fail because the URL was the value inside of an array instead of being a string. Now the plugin supports both cases.
