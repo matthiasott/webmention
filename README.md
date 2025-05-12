@@ -29,7 +29,9 @@ Go to the Plugin Store in your project’s Control Panel and search for “Webme
 > [!NOTE]  
 > If you’re updating from Webmention v0.3, [follow these instructions](#updating-from-v03) as well.
 
-## Receiving Webmentions: The Webmention endpoint
+## Receiving Webmentions
+
+### The Webmention endpoint
 In order to receive Webmentions, the Webmention endpoint of your site needs to be discoverable by the server sending the Webmention. So you will need to add the following line in the `<head>` section of your main layout template:
 
 ```twig
@@ -49,6 +51,14 @@ php craft webmention/example-template
 ```
 
 You can then adjust the template to your needs.
+
+### The `webmention/receive` CLI command
+
+For testing purposes, or if you want to add webmentions yourself manually, you can use the `webmention/receive` CLI command, which processes the webmention for a given source and target:
+
+```sh
+php craft webmention/receive <source> <target>
+```
 
 ### Displaying Webmentions
 To output all Webmentions for the current request URL, you can use the following helper in your templates:
