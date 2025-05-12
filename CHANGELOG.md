@@ -1,6 +1,7 @@
 # Release Notes for Webmention for Craft CMS
 
 ## Unreleased
+- Improved performance by automatically eager-loading avatars the first time `getAvatar()` is called. ([#13](https://github.com/matthiasott/webmention/pull/13))
 - Added the “Host” condition rule type. ([#12](https://github.com/matthiasott/webmention/pull/12))
 - “Source” and “Target” condition rules no longer have “has a value” or “is empty” operators. ([#12](https://github.com/matthiasott/webmention/pull/12))
 
