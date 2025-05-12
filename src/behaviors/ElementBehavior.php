@@ -26,6 +26,15 @@ class ElementBehavior extends Behavior
     }
 
     /**
+     * @return int
+     */
+    public function getTotalWebmentions(): int
+    {
+        $count = $this->owner->getEagerLoadedElementCount('webmentions');
+        return $count ?? Plugin::getInstance()->webmentions->getTotalWebmentionsForElement($this->owner);
+    }
+
+    /**
      * @param string|null $type
      * @return Webmention[]
      */
@@ -41,5 +50,19 @@ class ElementBehavior extends Behavior
         }
 
         return Plugin::getInstance()->webmentions->getWebmentionsForElementByType($this->owner, $type);
+    }
+
+    /**
+     * @param string|null $type
+     * @return int
+     */
+    public function getTotalWebmentionsByType(?string $type = null): int
+    {
+        if ($type === null) {
+            return $this->getTotalWebmentions();
+        }
+
+        $count = $this->owner->getEagerLoadedElementCount("webmentions:$type");
+        return $count ?? Plugin::getInstance()->webmentions->getTotalWebmentionsForElementByType($this->owner, $type);
     }
 }
