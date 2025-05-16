@@ -61,7 +61,7 @@ php craft webmention/receive <source> <target>
 ```
 
 ### Displaying Webmentions
-To output all Webmentions for the current request URL, you can use the following helper in your templates:
+To output all Webmentions for the current *request URL*, you can use the following helper in your templates:
 
 ```twig
 {{ craft.webmention.showWebmentions() }}
@@ -78,7 +78,7 @@ If you want full control over the HTML output for Webmentions, you can fetch all
 {% endfor %}
 ```
 
-To fetch all Webmentions for an element, you can call `getWebmentions()` on the element:
+To fetch all Webmentions for an *element*, you can call `getWebmentions()` on the element:
 
 ```twig
 {% for webmention in entry.getWebmentions() %}
@@ -93,6 +93,36 @@ And if you want to fetch only Webmentions of a certain type, like comments, like
   …
 {% endfor %}
 ```
+
+### Eager-loading Webmentions
+
+The plugin supports eager-loading elements with the following values passed into the `with` param:
+
+- `webmentions`
+- `webmentions:<type>` (e.g. `webmentions:like`)
+
+```twig
+{% set entries = craft.entries()
+  .section('blog')
+  .with(['webmentions:like', 'webmentions:comment'])
+  .all() %}
+```
+
+With that in place, calling `element.getWebmentions()` or `element.getWebmentionsByType()` will return the eager-loaded webmentions, rather than querying for them for each individual element.
+
+If all you want to do is output the total, you can set the `with` path’s criteria to `{count: true}`:
+
+```twig
+{% set entries = craft.entries()
+  .section('blog')
+  .with([
+    ['webmentions:like', {count: true}],
+    ['webmentions:comment', {count: true}],
+  ])
+  .all() %}
+```
+
+Alternatively, you can use the  `element.getTotalWebmentions()` and `getTotalWebmentionsByType()` methods to output the total. Both methods support eager-loading as well.
 
 ### Display a Webmention form for the current URL
 You can output a form in your entry template that lets people directly send you the URL of a response.
