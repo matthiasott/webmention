@@ -1,5 +1,10 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.0.4 – 2025-05-16
+
+- Added support for eager-loading webmentions
+- Added new `element.getTotalWebmentions()` and `getTotalWebmentionsByType()` methods, which support eager-loading as well.
+
 ## 1.0.3 – 2025-05-12
 - Improved performance by automatically eager-loading avatars the first time `getAvatar()` is called. ([#13](https://github.com/matthiasott/webmention/pull/13))
 - Added the “Host” condition rule type. ([#12](https://github.com/matthiasott/webmention/pull/12))
