@@ -4,6 +4,7 @@ namespace matthiasott\webmention\elements;
 
 use Craft;
 use craft\base\Element;
+use craft\base\ElementInterface;
 use craft\elements\Asset;
 use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\EagerLoadPlan;
@@ -334,6 +335,14 @@ JS, [
         $this->setDirtyAttributes($dirtyAttributes);
 
         parent::afterSave($isNew);
+
+        // Invalidate the target element's caches
+        $element = $this->getTargetElement();
+        if ($element) {
+            Craft::$app->onAfterRequest(function() use ($element) {
+                Craft::$app->getElements()->invalidateCachesForElement($element);
+            });
+        }
     }
 
     /**
@@ -371,5 +380,19 @@ JS, [
         } else {
             parent::setEagerLoadedElements($handle, $elements, $plan);
         }
+    }
+
+    /**
+     * Returns the target element, if there is one.
+     *
+     * @since 1.1.0
+     */
+    public function getTargetElement(): ?ElementInterface
+    {
+        if (!$this->targetId) {
+            return null;
+        }
+
+        return Craft::$app->getElements()->getElementById($this->targetId, siteId: $this->targetSiteId);
     }
 }
