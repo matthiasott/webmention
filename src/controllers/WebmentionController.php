@@ -20,10 +20,16 @@ class WebmentionController extends Controller
     public function actionHandleRequest(): ?Response
     {
         if ($this->request->isPost) {
-            $this->actionHandleWebmention();
-            return $this->redirectToPostedUrl(null, UrlHelper::url($this->request->absoluteUrl, [
-                'success' => 1,
-            ]));
+            $response = $this->actionHandleWebmention();
+            $acceptHeader = $this->request->getHeaders()->get('Accept', '');
+
+            if (str_contains($acceptHeader, 'text/html')) {
+                return $this->redirectToPostedUrl(null, UrlHelper::url($this->request->absoluteUrl, [
+                    'success' => 1,
+                ]));
+            }
+
+            return $response;
         }
 
         if ($this->request->isGet) {
