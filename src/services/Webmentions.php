@@ -29,6 +29,7 @@ use matthiasott\webmention\jobs\SendWebmention;
 use matthiasott\webmention\Plugin;
 use Mf2;
 use yii\base\Component;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
 
 /**
@@ -273,18 +274,27 @@ class Webmentions extends Component
      */
     public function parseWebmention(string $html, string $source, string $target): Webmention|false
     {
-        // Parsed the HTML with Mf2
+        // Parse the HTML with Mf2
         $parsed = Mf2\parse($html, $source);
 
-        // Let's look up where the h-entry is and use this array
-        foreach ($parsed['items'] as $item) {
-            if (in_array('h-entry', $item['type']) || in_array('p-entry', $item['type'])) {
-                $entry = $item;
-                break;
+        function findHEntry($items) {
+            foreach ($items as $item) {
+                if (in_array('h-entry', $item['type'])) {
+                    return $item;
+                }
+                // Check nested children
+                if (isset($item['children']) && is_array($item['children'])) {
+                    $found = findHEntry($item['children']);
+                    if ($found) return $found;
+                }
             }
+            return null;
         }
 
+        $entry = findHEntry($parsed['items']);
+
         if (!isset($entry)) {
+            throw new Exception("No h-entry found in source HTML.");
             return false;
         }
 
@@ -295,6 +305,7 @@ class Webmentions extends Component
 
         if (empty($result)) {
             // probably spam
+            throw new Exception('Could not parse comment.');
             return false;
         }
 
