@@ -21,9 +21,8 @@ class WebmentionController extends Controller
     {
         if ($this->request->isPost) {
             $response = $this->actionHandleWebmention();
-            $acceptHeader = $this->request->getHeaders()->get('Accept', '');
 
-            if (str_contains($acceptHeader, 'text/html')) {
+            if ($this->request->accepts('text/html')) {
                 return $this->redirectToPostedUrl(null, UrlHelper::url($this->request->absoluteUrl, [
                     'success' => 1,
                 ]));
