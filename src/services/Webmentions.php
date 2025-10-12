@@ -265,6 +265,25 @@ class Webmentions extends Component
     }
 
     /**
+     * Find an h-entry in a list of mf2 items
+     * @param array $items
+     * @return array|null The h-entry item or null if none found
+     */
+    private function findHEntry(array $items)
+    {
+        foreach ($items as $item) {
+            if (in_array('h-entry', $item['type'])) {
+                return $item;
+            }
+            if (isset($item['children']) && is_array($item['children'])) {
+                $found = $this->findHEntry($item['children']);
+                if ($found) return $found;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Parse HTML of a source and populate model
      *
      * @param string $html The HTML of the source
@@ -277,21 +296,7 @@ class Webmentions extends Component
         // Parse the HTML with Mf2
         $parsed = Mf2\parse($html, $source);
 
-        function findHEntry($items) {
-            foreach ($items as $item) {
-                if (in_array('h-entry', $item['type'])) {
-                    return $item;
-                }
-                // Check nested children
-                if (isset($item['children']) && is_array($item['children'])) {
-                    $found = findHEntry($item['children']);
-                    if ($found) return $found;
-                }
-            }
-            return null;
-        }
-
-        $entry = findHEntry($parsed['items']);
+        $entry = $this->findHEntry($parsed['items']);
 
         if (!isset($entry)) {
             throw new Exception("No h-entry found in source HTML.");
@@ -430,6 +435,8 @@ class Webmentions extends Component
 
         return $model;
     }
+
+
 
     private function saveAsset(string $url): ?Asset
     {
