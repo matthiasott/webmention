@@ -1,9 +1,9 @@
 <section class="webmentions container">
   {% set element = craft.app.urlManager.getMatchedElement() %}
   
-  {% set mentions = element ? craft.webmention.getWebmentionsForElement(element) : craft.webmention.getWebmentions(url) %}
-  {% set likes = element ? craft.webmention.getWebmentionsForElementByType(element, 'like') : craft.webmention.getWebmentions(url) %}
-  {% set reposts = element ? craft.webmention.getWebmentionsForElementByType(element, 'repost') : craft.webmention.getWebmentions(url) %}
+  {% set mentions = (element ? craft.webmention.getWebmentionsForElement(element) : craft.webmention.getWebmentions(url))|sort((a, b) => a.published <=> b.published) %}
+  {% set likes = (element ? craft.webmention.getWebmentionsForElementByType(element, 'like') : craft.webmention.getWebmentions(url))|sort((a, b) => a.published <=> b.published) %}
+  {% set reposts = (element ? craft.webmention.getWebmentionsForElementByType(element, 'repost') : craft.webmention.getWebmentions(url))|sort((a, b) => a.published <=> b.published) %}
   
   {% set nummentions = mentions|length %}
   {% set likescounter = 0 %}
