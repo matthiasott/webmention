@@ -158,17 +158,13 @@ class Webmentions extends Component
             // Get the type of mention from Bridgy's webmention source URLs
             if (preg_match('/post/', $src)) {
                 $result['type'] = 'mention';
-            }
-            if (preg_match('/comment/', $src)) {
+            } elseif (preg_match('/comment/', $src)) {
                 $result['type'] = 'comment';
-            }
-            if (preg_match('/like/', $src)) {
+            } elseif (preg_match('/like/', $src)) {
                 $result['type'] = 'like';
-            }
-            if (preg_match('/repost/', $src)) {
+            } elseif (preg_match('/repost/', $src)) {
                 $result['type'] = 'repost';
-            }
-            if (preg_match('/rsvp/', $src)) {
+            } elseif (preg_match('/rsvp/', $src)) {
                 $result['type'] = 'rsvp';
             }
         } else {
@@ -389,7 +385,6 @@ class Webmentions extends Component
 
         if (!isset($entry)) {
             throw new Exception("No h-entry found in source HTML.");
-            return false;
         }
 
         // Parse comment – with max text length from settings
@@ -400,7 +395,6 @@ class Webmentions extends Component
         if (empty($result)) {
             // probably spam
             throw new Exception('Could not parse comment.');
-            return false;
         }
 
         // Determine the type of the response
@@ -424,14 +418,12 @@ class Webmentions extends Component
         }
 
         // If author name is empty use the one from the representative h-card
-        if (empty($result['author']['name'])) {
+        if (empty($result['author']['name']) && $representative) {
             $result['author']['name'] = $representative['properties']['name'][0] ?? $representative['properties']['nickname'][0] ?? null;
         }
         // If author url is empty use the one from the representative h-card
-        if (empty($result['author']['url'])) {
-            if ($representative) {
-                $result['author']['url'] = $representative['properties']['url'][0];
-            }
+        if (empty($result['author']['url']) && $representative) {
+            $result['author']['url'] = $representative['properties']['url'][0] ?? null;
         }
         // If url is empty use source url
         if (empty($result['url'])) {
@@ -445,21 +437,21 @@ class Webmentions extends Component
         // Author photo
 
         if (!empty($result['author']['photo'])) {
-            Craft::info('Not empty', 'webmention');
             if (isset($result['author']['photo']['value'])) {
                 $result['author']['photo'] = $result['author']['photo']['value'];
             }
         } elseif ($representative) {
             // Sometimes the structure of the parsed h-card differs
-            if ($representative['properties']['photo'][0] && is_string($representative['properties']['photo'][0])) {
+            $photo = $representative['properties']['photo'][0] ?? null;
+            if ($photo && is_string($photo)) {
                 // The photo can be the first element in ['photo']
-                $result['author']['photo'] = $representative['properties']['photo'][0];
-            } elseif ($representative['properties']['photo'][0]['value'] && is_string($representative['properties']['photo'][0]['value'])) {
+                $result['author']['photo'] = $photo;
+            } elseif (is_array($photo) && isset($photo['value']) && is_string($photo['value'])) {
                 // Alternatively, the photo can be the ['value'] key of the array inside ['photo']
-                $result['author']['photo'] = $representative['properties']['photo'][0]['value'];
+                $result['author']['photo'] = $photo['value'];
             } else {
                 // If no author photo is defined, check gravatar for image
-                $email = $representative['properties']['email'][0];
+                $email = $representative['properties']['email'][0] ?? null;
                 if ($email) {
                     $email = rtrim(str_replace('mailto:', '', $email));
                     $gravatar = $this->_get_gravatar($email);
@@ -507,19 +499,19 @@ class Webmentions extends Component
         ]);
 
         // assign attributes
-        $model->authorName = Html::encode($result['author']['name']);
+        $model->authorName = Html::encode($result['author']['name'] ?? null);
         $model->avatarId = $result['author']['avatarId'] ?? null;
-        $model->authorUrl = Html::encode($result['author']['url']);
-        $model->published = new DateTime($result['published']);
-        $model->name = Html::encode($result['name']);
+        $model->authorUrl = Html::encode($result['author']['url'] ?? null);
+        $model->published = isset($result['published']) ? new DateTime($result['published']) : null;
+        $model->name = Html::encode($result['name'] ?? null);
         $model->text = $text;
         $model->target = Html::encode($target);
         $model->targetId = $targetElement?->id;
         $model->targetSiteId = $targetElement && $targetElement->isLocalized() ? $targetElement->siteId : null;
         $model->source = Html::encode($source);
-        $model->hEntryUrl = Html::encode($result['url']);
-        $model->host = $result['site'];
-        $model->type = $result['type'];
+        $model->hEntryUrl = Html::encode($result['url'] ?? null);
+        $model->host = $result['site'] ?? null;
+        $model->type = $result['type'] ?? null;
         $model->properties = $entry['properties'];
 
         return $model;
@@ -547,7 +539,7 @@ class Webmentions extends Component
 
         $body = (string) $response->getBody();
 
-        $hashedFileName = sha1(pathinfo($url, PATHINFO_FILENAME));
+        $hashedFileName = sha1($url);
 
         $fileExtension = (pathinfo($url, PATHINFO_EXTENSION));
 
@@ -657,12 +649,12 @@ class Webmentions extends Component
             [$site, $parsedSiteUrl] = $siteInfo;
         } else {
             $site = $sitesService->getPrimarySite();
-            $parsedSiteUrl = $sites[$site->id];
+            $parsedSiteUrl = $sites[$site->id] ?? null;
         }
 
         // figure out the entry URI relative to the site base path
         $uri = $parsedTarget['path'];
-        if ($parsedSiteUrl['path'] && str_starts_with("{$parsedTarget['path']}/", "{$parsedSiteUrl['path']}/")) {
+        if ($parsedSiteUrl && $parsedSiteUrl['path'] && str_starts_with("{$parsedTarget['path']}/", "{$parsedSiteUrl['path']}/")) {
             $uri = substr($uri, strlen($parsedSiteUrl['path']) + 1);
         }
 
@@ -672,10 +664,14 @@ class Webmentions extends Component
     /**
      * @param array $parsedTarget
      * @param array{0:Site,1:array}[] $sites
-     * @return array
+     * @return array|null
      */
-    private function matchTargetSite(array $parsedTarget, array $sites): array
+    private function matchTargetSite(array $parsedTarget, array $sites): ?array
     {
+        if (empty($sites)) {
+            return null;
+        }
+
         $scores = [];
         foreach ($sites as $i => $site) {
             $scores[$i] = $this->scoreSiteForTarget($site, $parsedTarget);
