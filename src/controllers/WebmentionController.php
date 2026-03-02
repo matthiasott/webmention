@@ -22,7 +22,9 @@ class WebmentionController extends Controller
         if ($this->request->isPost) {
             $response = $this->actionHandleWebmention();
 
-            if ($this->request->accepts('text/html')) {
+            $isFormSubmission = $this->request->getBodyParam('origin') === 'form';
+
+            if ($isFormSubmission) {
                 return $this->redirectToPostedUrl(null, UrlHelper::url($this->request->absoluteUrl, [
                     'success' => 1,
                 ]));
