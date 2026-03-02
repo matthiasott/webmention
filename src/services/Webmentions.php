@@ -20,6 +20,8 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Collection;
 use LitEmoji\LitEmoji;
@@ -219,11 +221,17 @@ class Webmentions extends Component
         // Get HTML content
         $client = Craft::createGuzzleClient();
         try {
-            $response = $client->get($src);
+            Craft::info('Fetching source URL: ' . $src, 'webmention');
+            $response = $client->get($src, [
+                RequestOptions::CONNECT_TIMEOUT => 10,
+                RequestOptions::TIMEOUT => 30,
+            ]);
         } catch (GuzzleException $e) {
+            Craft::info('Failed to fetch source URL: ' . $e->getMessage(), 'webmention');
             return false;
         }
-        $html = (string)$response->getBody();
+        $html = (string) $response->getBody();
+        Craft::info('Fetched HTML, length: ' . strlen($html), 'webmention');
 
         // and go find a backlink
         $doc = new DOMDocument();
@@ -233,35 +241,114 @@ class Webmentions extends Component
         libxml_clear_errors();
         $xpath = new DOMXPath($doc);
 
+        $normalizedTarget = $this->normalizeUrl($target);
         $linkUrls = [];
 
         foreach ($xpath->query('//a[@href]') as $link) {
             /** @var DOMElement $link */
             $linkUrl = $link->getAttribute('href');
-            if (strcasecmp($linkUrl, $target) === 0) {
+            $resolvedUrl = $this->resolveUrl($linkUrl, $src);
+
+            if ($this->normalizeUrl($resolvedUrl) === $normalizedTarget) {
                 return $html;
             }
-            $linkUrls[] = $linkUrl;
+            $linkUrls[] = $resolvedUrl;
         }
 
+        // Only check for redirects if we haven't found a direct match, and limit the number of HEAD requests
+        $redirectCheckCount = 0;
+        $maxRedirectChecks = 10;
+
         foreach ($linkUrls as $linkUrl) {
+            if ($redirectCheckCount >= $maxRedirectChecks) {
+                break;
+            }
+
+            // Skip common social media and other high-link-count domains to save time
+            $host = parse_url($linkUrl, PHP_URL_HOST);
+            if ($host && preg_match('/(facebook|twitter|instagram|linkedin|github)\.com$/', $host)) {
+                continue;
+            }
+
             try {
                 $head = $client->head($linkUrl, [
                     RequestOptions::ALLOW_REDIRECTS => false,
+                    RequestOptions::CONNECT_TIMEOUT => 5,
+                    RequestOptions::TIMEOUT => 5,
                 ]);
+                $redirectCheckCount++;
             } catch (GuzzleException) {
                 continue;
             }
 
             if ($head->hasHeader('Location')) {
                 $redirect = $head->getHeader('Location')[0];
-                if (strcasecmp($redirect, $target) === 0) {
+                $resolvedRedirect = $this->resolveUrl($redirect, $linkUrl);
+                if ($this->normalizeUrl($resolvedRedirect) === $normalizedTarget) {
                     return $html;
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * Normalize a URL for comparison
+     *
+     * @param string $url
+     * @return string
+     */
+    public function normalizeUrl(string $url): string
+    {
+        $parsed = parse_url($url);
+        if (!$parsed) {
+            return $url;
+        }
+
+        $scheme = isset($parsed['scheme']) ? strtolower($parsed['scheme']) : 'http';
+        $host = isset($parsed['host']) ? strtolower($parsed['host']) : '';
+        $path = isset($parsed['path']) ? strtolower($parsed['path']) : '/';
+
+        // Remove trailing slash
+        $path = rtrim($path, '/');
+        if ($path === '') {
+            $path = '/';
+        }
+
+        $normalized = $scheme . '://' . $host . $path;
+
+        // Add port if present and not default
+        if (isset($parsed['port'])) {
+            if (($scheme === 'http' && $parsed['port'] !== 80) || ($scheme === 'https' && $parsed['port'] !== 443)) {
+                $normalized = $scheme . '://' . $host . ':' . $parsed['port'] . $path;
+            }
+        }
+
+        // Add query if present
+        if (isset($parsed['query'])) {
+            $normalized .= '?' . $parsed['query'];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Resolve a relative URL against a base URL
+     *
+     * @param string $url
+     * @param string $base
+     * @return string
+     */
+    public function resolveUrl(string $url, string $base): string
+    {
+        $uri = new Uri($url);
+        if ($uri->getScheme() !== '') {
+            return $url;
+        }
+
+        $baseUri = new Uri($base);
+        return (string) UriResolver::resolve($baseUri, $uri);
     }
 
     /**
@@ -277,7 +364,9 @@ class Webmentions extends Component
             }
             if (isset($item['children']) && is_array($item['children'])) {
                 $found = $this->findHEntry($item['children']);
-                if ($found) return $found;
+                if ($found) {
+                    return $found;
+                }
             }
         }
         return null;
@@ -352,9 +441,9 @@ class Webmentions extends Component
         if (empty($result['site'])) {
             $result['site'] = parse_url($result['url'], PHP_URL_HOST);
         }
-        
+
         // Author photo
-        
+
         if (!empty($result['author']['photo'])) {
             Craft::info('Not empty', 'webmention');
             if (isset($result['author']['photo']['value'])) {
@@ -448,25 +537,39 @@ class Webmentions extends Component
         // get remote image and store in temp path with a hashed filename
         $client = Craft::createGuzzleClient();
         try {
-            $response = $client->get($url);
+            $response = $client->get($url, [
+                RequestOptions::CONNECT_TIMEOUT => 10,
+                RequestOptions::TIMEOUT => 30,
+            ]);
         } catch (GuzzleException) {
             return null;
         }
+
+        $body = (string) $response->getBody();
 
         $hashedFileName = sha1(pathinfo($url, PATHINFO_FILENAME));
 
         $fileExtension = (pathinfo($url, PATHINFO_EXTENSION));
 
-        // In case the file doesn’t have an extension – which is the case for Bluesky avatars – we need to get it via the MIME type
         if (empty($fileExtension)) {
-            // Get the MIME type from image type
-            $mime_type = image_type_to_mime_type(exif_imagetype($url));
-            
-            if (!empty($mime_type)) {
-                // get the right extension
-                $fileExtension = FileHelper::getExtensionByMimeType($mime_type);
-            } else {
-                // if it all fails, let’s just assume it is a JPG for now
+            // First try to get MIME type from Content-Type header
+            $mimeType = $response->getHeaderLine('Content-Type');
+
+            if ($mimeType && str_starts_with($mimeType, 'image/')) {
+                $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
+            }
+
+            // Fallback: detect from image content (already downloaded)
+            if (empty($fileExtension)) {
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->buffer($body);
+                if ($mimeType && str_starts_with($mimeType, 'image/')) {
+                    $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
+                }
+            }
+
+            // Last resort: assume JPG
+            if (empty($fileExtension)) {
                 $fileExtension = "jpg";
             }
         }
@@ -474,7 +577,7 @@ class Webmentions extends Component
         $fileName = $hashedFileName . "." . $fileExtension;
 
         $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), $fileName);
-        FileHelper::writeToFile($tempPath, (string)$response->getBody());
+        FileHelper::writeToFile($tempPath, $body);
 
         // If it's an image, cleanse it of any malicious scripts that may be embedded
         // (recommended unless you completely trust everyone that’s uploading images)
@@ -716,7 +819,7 @@ class Webmentions extends Component
         // check if entry has Webmention sending disabled (overrides entry type settings from the CP)
         foreach ($entry->getFieldLayout()->getCustomFields() as $field) {
             if ($field instanceof WebmentionSwitch) {
-                $sendWebmentions = (bool)$entry->getFieldValue($field->handle);
+                $sendWebmentions = (bool) $entry->getFieldValue($field->handle);
                 break;
             }
         }
