@@ -19,7 +19,7 @@
             {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
                 <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
-                     alt="Photo of {{ block.authorName }}">
+                     alt="Photo of {{ block.authorName }}" loading="lazy">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
@@ -57,7 +57,7 @@
             {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
                 <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
-                     alt="Photo of {{ block.authorName }}">
+                     alt="Photo of {{ block.authorName }}" loading="lazy">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name"><a
@@ -83,7 +83,7 @@
             {% if block.avatar %}
               <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
                 <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
-                     alt="Photo of {{ block.authorName }}">
+                     alt="Photo of {{ block.authorName }}" loading="lazy">
               </a>
             {% endif %}
             <figcaption class="webmention__author-name p-name">
