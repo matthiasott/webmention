@@ -13,15 +13,17 @@
       </div>
     {% endif %}
 
-    <form action="" method="post" class="form">
+    {% set settings = craft.app.getPlugins().getPlugin('webmention').getSettings() %}
+    <form action="/{{ settings.endpointSlug }}" method="post" class="form">
       {{ csrfInput() }}
+      <input type="hidden" name="origin" value="form">
       <div class="field">
         <label for="source">Source URL</label>
-        <input id="source" name="source" type="url">
+        <input id="source" name="source" type="url" required>
       </div>
       <div class="field">
         <label for="target">Target URL</label>
-        <input id="target" name="target" type="text">
+        <input id="target" name="target" type="url" required>
       </div>
         <button type="submit" class="button primary">Send Webmention</button>
     </form>

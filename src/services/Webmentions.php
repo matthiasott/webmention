@@ -214,6 +214,12 @@ class Webmentions extends Component
             return false;
         }
 
+        // Check if source URL is resolvable
+        if (!$this->isResolvableUrl($src)) {
+            Craft::warning("Skipping webmention from unresolvable domain: $src", 'webmention');
+            return false;
+        }
+
         // Get HTML content
         $client = Craft::createGuzzleClient();
         try {
@@ -223,7 +229,7 @@ class Webmentions extends Component
                 RequestOptions::TIMEOUT => 30,
             ]);
         } catch (GuzzleException $e) {
-            Craft::info('Failed to fetch source URL: ' . $e->getMessage(), 'webmention');
+            Craft::warning(sprintf('Failed to fetch source URL "%s": %s', $src, $e->getMessage()), 'webmention');
             return false;
         }
         $html = (string) $response->getBody();
@@ -287,6 +293,38 @@ class Webmentions extends Component
         }
 
         return false;
+    }
+
+    /**
+     * Check if a URL's domain is resolvable via DNS.
+     * Returns false for local/test TLDs that won't resolve.
+     *
+     * @param string $url
+     * @return bool
+     */
+    private function isResolvableUrl(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!$host) {
+            return false;
+        }
+
+        // Skip local/test TLDs that won't resolve
+        $localTlds = ['test', 'local', 'localhost', 'internal', 'example'];
+        $hostParts = explode('.', $host);
+        $tld = strtolower(end($hostParts));
+        if (in_array($tld, $localTlds, true)) {
+            return false;
+        }
+
+        // Skip localhost and IP addresses
+        if ($host === 'localhost' || filter_var($host, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        // Quick DNS check (with timeout)
+        $records = @dns_get_record($host, DNS_A);
+        return !empty($records);
     }
 
     /**
