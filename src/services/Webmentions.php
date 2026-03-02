@@ -436,34 +436,41 @@ class Webmentions extends Component
 
         // Author photo
 
+        $authorPhotoUrl = null;
+        $authorPhotoAlt = null;
+
         if (!empty($result['author']['photo'])) {
-            if (isset($result['author']['photo']['value'])) {
-                $result['author']['photo'] = $result['author']['photo']['value'];
+            if (is_array($result['author']['photo'])) {
+                $authorPhotoUrl = $result['author']['photo']['value'] ?? null;
+                $authorPhotoAlt = $result['author']['photo']['alt'] ?? null;
+            } else {
+                $authorPhotoUrl = $result['author']['photo'];
             }
         } elseif ($representative) {
             // Sometimes the structure of the parsed h-card differs
             $photo = $representative['properties']['photo'][0] ?? null;
             if ($photo && is_string($photo)) {
                 // The photo can be the first element in ['photo']
-                $result['author']['photo'] = $photo;
+                $authorPhotoUrl = $photo;
             } elseif (is_array($photo) && isset($photo['value']) && is_string($photo['value'])) {
                 // Alternatively, the photo can be the ['value'] key of the array inside ['photo']
-                $result['author']['photo'] = $photo['value'];
+                $authorPhotoUrl = $photo['value'];
+                $authorPhotoAlt = $photo['alt'] ?? null;
             } else {
                 // If no author photo is defined, check gravatar for image
                 $email = $representative['properties']['email'][0] ?? null;
                 if ($email) {
                     $email = rtrim(str_replace('mailto:', '', $email));
                     $gravatar = $this->_get_gravatar($email);
-                    $result['author']['photo'] = $gravatar . ".jpg";
+                    $authorPhotoUrl = $gravatar . ".jpg";
                 }
             }
         }
 
         // Author photo should be saved locally to avoid exploits.
         // If an author photo is available get the image and save it to assets
-        if (!empty($result['author']['photo'])) {
-            $asset = $this->saveAsset($result['author']['photo']);
+        if ($authorPhotoUrl) {
+            $asset = $this->saveAsset($authorPhotoUrl, $authorPhotoAlt);
             if ($asset) {
                 $result['author']['avatarId'] = $asset->id;
             }
@@ -519,7 +526,7 @@ class Webmentions extends Component
 
 
 
-    private function saveAsset(string $url): ?Asset
+    private function saveAsset(string $url, ?string $alt = null): ?Asset
     {
         $folder = $this->getAvatarFolder();
         if (!$folder) {
@@ -572,7 +579,7 @@ class Webmentions extends Component
         FileHelper::writeToFile($tempPath, $body);
 
         // If it's an image, cleanse it of any malicious scripts that may be embedded
-        // (recommended unless you completely trust everyone that’s uploading images)
+        // (recommended unless you completely trust everyone that's uploading images)
         $ext = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
         if (Image::canManipulateAsImage($ext) && $ext !== 'svg') {
             Craft::$app->images->cleanImage($tempPath);
@@ -584,9 +591,12 @@ class Webmentions extends Component
         $asset->newFilename = $fileName;
         $asset->newFolderId = $folder->id;
         $asset->avoidFilenameConflicts = true;
+        if ($alt) {
+            $asset->alt = $alt;
+        }
 
         if (!Craft::$app->elements->saveElement($asset)) {
-            Craft::warning(sprintf('Couldn’t save avatar asset: %s', implode(', ', $asset->getFirstErrors())), __METHOD__);
+            Craft::warning(sprintf('Couldn\'t save avatar asset: %s', implode(', ', $asset->getFirstErrors())), __METHOD__);
             return null;
         }
 
