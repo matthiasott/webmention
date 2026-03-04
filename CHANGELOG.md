@@ -1,5 +1,15 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.0.5 – 2026-03-04
+ 
+- Added alt text support for author photos. ([#9](https://github.com/matthiasott/webmention/issues/9))
+- Added `loading="lazy"` to the webmention Twig template.
+- Improved reliability: unresolvable URLs (local/test TLDs, localhost, IP addresses) are now detected via DNS lookup and handled gracefully without blocking the queue.
+- Improved performance: avatar images are no longer loaded twice, and Guzzle connection/request timeouts are now configured to better handle slow responses.
+- Improved URL matching by normalizing URLs for comparison.
+- Fixed multiple bugs in webmention parsing and avatar handling, including null checks for representative h-card property access, graceful handling of missing published dates, avatar filename collision prevention (by hashing the full URL), and correct Bridgy type detection.
+- Fixed form submission check to use URL parameter.
+
 ## 1.0.4 – 2025-05-16
 
 - Added support for eager-loading webmentions
