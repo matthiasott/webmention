@@ -1,5 +1,9 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.0.6 – 2026-03-05
+
+- Fixed Bridgy source URL type and site detection to match path segments only, preventing false positives where e.g. `app.bsky.feed.post` in Bluesky URLs would incorrectly match as a mention type.
+
 ## 1.0.5 – 2026-03-04
  
 - Added alt text support for author photos. ([#9](https://github.com/matthiasott/webmention/issues/9))
