@@ -133,38 +133,38 @@ class Webmentions extends Component
             }
 
             // Get the site from Bridgy's webmention source URLs
-            if (preg_match('/facebook/', $src)) {
+            if (preg_match('/\/facebook\//', $src)) {
                 $result['site'] = 'facebook';
             }
-            if (preg_match('/flickr/', $src)) {
+            if (preg_match('/\/flickr\//', $src)) {
                 $result['site'] = 'flickr';
             }
-            if (preg_match('/github/', $src)) {
+            if (preg_match('/\/github\//', $src)) {
                 $result['site'] = 'github';
             }
-            if (preg_match('/instagram/', $src)) {
+            if (preg_match('/\/instagram\//', $src)) {
                 $result['site'] = 'instagram';
             }
-            if (preg_match('/mastodon/', $src)) {
+            if (preg_match('/\/mastodon\//', $src)) {
                 $result['site'] = 'mastodon';
             }
-            if (preg_match('/bluesky/', $src)) {
+            if (preg_match('/\/bluesky\//', $src)) {
                 $result['site'] = 'bluesky';
             }
-            if (preg_match('/reddit/', $src)) {
+            if (preg_match('/\/reddit\//', $src)) {
                 $result['site'] = 'reddit';
             }
 
             // Get the type of mention from Bridgy's webmention source URLs
-            if (preg_match('/post/', $src)) {
+            if (preg_match('/\/post\//', $src)) {
                 $result['type'] = 'mention';
-            } elseif (preg_match('/comment/', $src)) {
+            } elseif (preg_match('/\/comment\//', $src)) {
                 $result['type'] = 'comment';
-            } elseif (preg_match('/like/', $src)) {
+            } elseif (preg_match('/\/like\//', $src)) {
                 $result['type'] = 'like';
-            } elseif (preg_match('/repost/', $src)) {
+            } elseif (preg_match('/\/repost\//', $src)) {
                 $result['type'] = 'repost';
-            } elseif (preg_match('/rsvp/', $src)) {
+            } elseif (preg_match('/\/rsvp\//', $src)) {
                 $result['type'] = 'rsvp';
             }
         } else {
