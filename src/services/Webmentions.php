@@ -548,7 +548,7 @@ class Webmentions extends Component
         $model->avatarId = $result['author']['avatarId'] ?? null;
         $model->authorUrl = Html::encode($result['author']['url'] ?? null);
         $model->published = isset($result['published']) ? new DateTime($result['published']) : null;
-        $model->name = Html::encode($result['name'] ?? null);
+        $model->name = Html::encode(mb_substr($result['name'] ?? '', 0, 255));
         $model->text = $text;
         $model->target = Html::encode($target);
         $model->targetId = $targetElement?->id;
