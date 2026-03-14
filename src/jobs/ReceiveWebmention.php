@@ -45,6 +45,9 @@ class ReceiveWebmention extends BaseJob
             }
 
             Craft::$app->getElements()->saveElement($webmention);
+
+            // Check if any existing webmentions are replies to this one (reverse resolution)
+            $service->resolveChildWebmentions($webmention);
         } catch (Throwable $e) {
             // Log and complete gracefully - don't throw to avoid blocking queue
             Craft::error(sprintf(

@@ -13,6 +13,7 @@ class Settings extends Model
     public bool $useBridgy = true;
     public ?string $avatarVolume = null;
     public string $avatarPath = 'avatars/';
+    public bool $useThreadedDisplay = true;
     public array $entryTypes = [];
 
     public function init(): void

@@ -65,4 +65,14 @@ class ElementBehavior extends Behavior
         $count = $this->owner->getEagerLoadedElementCount("webmentions:$type");
         return $count ?? Plugin::getInstance()->webmentions->getTotalWebmentionsForElementByType($this->owner, $type);
     }
+
+    /**
+     * Returns webmentions organized as a threaded tree.
+     *
+     * @return Webmention[]
+     */
+    public function getThreadedWebmentions(): array
+    {
+        return Plugin::getInstance()->webmentions->getThreadedWebmentionsForElement($this->owner);
+    }
 }

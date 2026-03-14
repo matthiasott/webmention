@@ -1,5 +1,17 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.1.0 – 2026-03-14
+
+- Added threaded/nested display for webmentions. Replies to other webmentions are now tracked via `in-reply-to` from mf2 data and displayed as nested threads.
+- Added `parentId` to the Webmention element, linking replies to the webmention they respond to.
+- Added reverse resolution: when a new webmention arrives, existing orphan replies are automatically linked to it.
+- Added retroactive backfill: existing webmentions with `in-reply-to` data are connected to their parents on migration.
+- Added "Threaded Display" setting in the control panel to toggle between threaded and flat display.
+- Added `getThreadedWebmentions()`, `getThreadedWebmentionsForElement()`, `getParentWebmention()`, `getChildWebmentions()`, and `getInReplyToUrl()` template helpers.
+- Added `parentId()` and `hasParent()` query params to `WebmentionQuery`.
+- Improved accessibility of the default template with semantic list markup and ARIA labels.
+- Added retry logic for avatar asset saving to handle transient stream errors.
+
 ## 1.0.7 – 2026-03-07
 
 - Fixed a database error caused by oversized `name` values from senders that populate the h-entry `name` property with UI chrome and article excerpts due to the mf2 implied name algorithm.

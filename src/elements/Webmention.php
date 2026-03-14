@@ -107,6 +107,15 @@ class Webmention extends Element
     public ?string $type = null;
     public ?string $rsvp = null;
     public ?array $properties = null;
+    public ?int $parentId = null;
+
+    /**
+     * Transient property populated by the threading logic.
+     * Not persisted to the database.
+     *
+     * @var Webmention[]
+     */
+    public array $children = [];
 
     private Asset|null|false $_avatar = null;
 
@@ -327,6 +336,7 @@ JS, [
         $record->type = $this->type;
         $record->rsvp = $this->rsvp;
         $record->properties = $this->properties;
+        $record->parentId = $this->parentId;
 
         // Capture the dirty attributes from the record
         $dirtyAttributes = array_keys($record->getDirtyAttributes());
@@ -394,5 +404,49 @@ JS, [
         }
 
         return Craft::$app->getElements()->getElementById($this->targetId, siteId: $this->targetSiteId);
+    }
+
+    /**
+     * Returns the parent webmention (the one this is a reply to), if any.
+     */
+    public function getParentWebmention(): ?self
+    {
+        if (!$this->parentId) {
+            return null;
+        }
+
+        return self::findOne($this->parentId);
+    }
+
+    /**
+     * Returns all direct replies to this webmention.
+     *
+     * @return self[]
+     */
+    public function getChildWebmentions(): array
+    {
+        return self::find()
+            ->parentId($this->id)
+            ->all();
+    }
+
+    /**
+     * Extracts the first in-reply-to URL from the mf2 properties.
+     */
+    public function getInReplyToUrl(): ?string
+    {
+        if (empty($this->properties['in-reply-to'])) {
+            return null;
+        }
+
+        $first = $this->properties['in-reply-to'][0] ?? null;
+        if (is_string($first)) {
+            return $first;
+        }
+        if (is_array($first) && isset($first['value'])) {
+            return $first['value'];
+        }
+
+        return null;
     }
 }

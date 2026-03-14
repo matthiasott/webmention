@@ -34,15 +34,18 @@ class Install extends Migration
             'hEntryUrl' => $this->string(384),
             'rsvp' => $this->string(),
             'properties' => $this->json(),
+            'parentId' => $this->integer(),
             'PRIMARY KEY([[id]])',
         ]);
 
         $this->createIndex(null, $tableName, ['target', 'source'], false);
         $this->createIndex(null, $tableName, ['targetId', 'targetSiteId', 'source'], false);
+        $this->createIndex(null, $tableName, ['parentId'], false);
         $this->addForeignKey(null, $tableName, ['id'], Table::ELEMENTS, ['id'], 'CASCADE', null);
         $this->addForeignKey(null, $tableName, ['targetId'], Table::ELEMENTS, ['id'], 'CASCADE', null);
         $this->addForeignKey(null, $tableName, ['targetSiteId'], Table::SITES, ['id'], 'CASCADE', null);
         $this->addForeignKey(null, $tableName, ['avatarId'], Table::ASSETS, ['id'], 'SET NULL', null);
+        $this->addForeignKey(null, $tableName, ['parentId'], $tableName, ['id'], 'SET NULL', null);
 
         return true;
     }

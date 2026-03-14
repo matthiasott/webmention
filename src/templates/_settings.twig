@@ -64,6 +64,13 @@
   on: settings.useBridgy,
 }) }}
 
+{{ forms.lightswitchField({
+  label: 'Threaded Display',
+  instructions: 'When enabled, replies to other webmentions are displayed as nested threads in the default template. When disabled, all webmentions are shown in a flat list.',
+  name: 'useThreadedDisplay',
+  on: settings.useThreadedDisplay,
+}) }}
+
 {% if hasVolumes %}
   {% set volumeOptions = craft.cp.getVolumeOptions() %}
   {%  if not avatarVolume %}

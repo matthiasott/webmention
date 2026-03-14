@@ -559,6 +559,9 @@ class Webmentions extends Component
         $model->type = $result['type'] ?? null;
         $model->properties = $entry['properties'];
 
+        // Resolve parent webmention from in-reply-to
+        $model->parentId = $this->resolveParentWebmention($entry['properties'], $target, $model->id);
+
         return $model;
     }
 
@@ -920,5 +923,155 @@ class Webmentions extends Component
                 $this->extractTargets($v, $targets);
             }
         }
+    }
+
+    /**
+     * Resolve a parent webmention ID from in-reply-to URLs in mf2 properties.
+     *
+     * @param array $properties The mf2 properties array
+     * @param string $target The target URL of the current webmention
+     * @param int|null $selfId The ID of the current webmention (to avoid self-reference)
+     * @return int|null The parent webmention ID, or null if none found
+     */
+    private function resolveParentWebmention(array $properties, string $target, ?int $selfId = null): ?int
+    {
+        if (empty($properties['in-reply-to'])) {
+            return null;
+        }
+
+        $replyToUrls = $this->extractInReplyToUrls($properties['in-reply-to']);
+        $normalizedTarget = $this->normalizeUrl($target);
+
+        foreach ($replyToUrls as $replyUrl) {
+            $normalized = $this->normalizeUrl($replyUrl);
+
+            // Skip if it points to the target post itself — that's a top-level comment
+            if ($normalized === $normalizedTarget) {
+                continue;
+            }
+
+            // Try to find a matching webmention by hEntryUrl or source
+            $parent = Webmention::find()
+                ->where([
+                    'or',
+                    ['webmentions.hEntryUrl' => $replyUrl],
+                    ['webmentions.source' => $replyUrl],
+                ])
+                ->one();
+
+            if ($parent && $parent->id !== $selfId) {
+                return $parent->id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * After saving a new webmention, check if any existing webmentions
+     * have an in-reply-to pointing to this webmention's source or hEntryUrl.
+     * If so, update their parentId (reverse resolution).
+     */
+    public function resolveChildWebmentions(Webmention $webmention): void
+    {
+        $urls = array_filter([$webmention->source, $webmention->hEntryUrl]);
+        if (empty($urls)) {
+            return;
+        }
+
+        // Find webmentions that might be replies to this one
+        $candidates = Webmention::find()
+            ->where(['webmentions.parentId' => null])
+            ->andWhere(['not', ['webmentions.properties' => null]])
+            ->all();
+
+        foreach ($candidates as $candidate) {
+            if ($candidate->id === $webmention->id) {
+                continue;
+            }
+
+            if (empty($candidate->properties['in-reply-to'])) {
+                continue;
+            }
+
+            $replyToUrls = $this->extractInReplyToUrls($candidate->properties['in-reply-to']);
+            $normalizedTarget = !empty($candidate->target) ? $this->normalizeUrl($candidate->target) : '';
+
+            foreach ($replyToUrls as $replyUrl) {
+                $normalized = $this->normalizeUrl($replyUrl);
+
+                // Skip if it points to the candidate's own target post
+                if ($normalized === $normalizedTarget) {
+                    continue;
+                }
+
+                foreach ($urls as $url) {
+                    if ($normalized === $this->normalizeUrl($url)) {
+                        $candidate->parentId = $webmention->id;
+                        Craft::$app->elements->saveElement($candidate);
+                        break 2;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Extract URLs from an mf2 in-reply-to array.
+     *
+     * @param array $inReplyTo
+     * @return string[]
+     */
+    private function extractInReplyToUrls(array $inReplyTo): array
+    {
+        $urls = [];
+        foreach ($inReplyTo as $item) {
+            if (is_string($item)) {
+                $urls[] = $item;
+            } elseif (is_array($item) && isset($item['value'])) {
+                $urls[] = $item['value'];
+            }
+        }
+        return $urls;
+    }
+
+    /**
+     * Returns webmentions for an element organized as a threaded tree.
+     * Top-level webmentions (parentId = null) are returned with their
+     * children populated recursively.
+     *
+     * @param ElementInterface $element
+     * @return Webmention[]
+     */
+    public function getThreadedWebmentionsForElement(ElementInterface $element): array
+    {
+        $all = $this->getWebmentionsForElement($element);
+        return $this->buildThread($all);
+    }
+
+    /**
+     * Build a threaded tree from a flat list of webmentions.
+     *
+     * @param Webmention[] $webmentions
+     * @return Webmention[] Top-level webmentions with children populated
+     */
+    public function buildThread(array $webmentions): array
+    {
+        $byId = [];
+        foreach ($webmentions as $wm) {
+            $wm->children = [];
+            $byId[$wm->id] = $wm;
+        }
+
+        $roots = [];
+        foreach ($webmentions as $wm) {
+            if ($wm->parentId && isset($byId[$wm->parentId])) {
+                $byId[$wm->parentId]->children[] = $wm;
+            } else {
+                $roots[] = $wm;
+            }
+        }
+
+        return $roots;
     }
 }

@@ -28,6 +28,7 @@ use craft\db\ActiveRecord;
  * @property string|null $type
  * @property string|null $rsvp
  * @property array|null $properties
+ * @property int|null $parentId
  */
 class Webmention extends ActiveRecord
 {

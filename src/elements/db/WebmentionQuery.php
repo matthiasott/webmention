@@ -27,6 +27,8 @@ class WebmentionQuery extends ElementQuery
     public mixed $type = null;
     public mixed $rsvp = null;
     public mixed $properties = null;
+    public mixed $parentId = null;
+    public ?bool $hasParent = null;
 
     public function authorName(mixed $value): static
     {
@@ -112,6 +114,18 @@ class WebmentionQuery extends ElementQuery
         return $this;
     }
 
+    public function parentId(mixed $value): static
+    {
+        $this->parentId = $value;
+        return $this;
+    }
+
+    public function hasParent(?bool $value): static
+    {
+        $this->hasParent = $value;
+        return $this;
+    }
+
     protected function beforePrepare(): bool
     {
         if (!parent::beforePrepare()) {
@@ -136,6 +150,7 @@ class WebmentionQuery extends ElementQuery
             'webmentions.type',
             'webmentions.rsvp',
             'webmentions.properties',
+            'webmentions.parentId',
         ]);
 
         if ($this->authorName) {
@@ -196,6 +211,16 @@ class WebmentionQuery extends ElementQuery
 
         if ($this->properties) {
             $this->subQuery->andWhere(Db::parseParam('webmentions.properties', $this->properties));
+        }
+
+        if ($this->parentId !== null) {
+            $this->subQuery->andWhere(Db::parseParam('webmentions.parentId', $this->parentId));
+        }
+
+        if ($this->hasParent === true) {
+            $this->subQuery->andWhere(['not', ['webmentions.parentId' => null]]);
+        } elseif ($this->hasParent === false) {
+            $this->subQuery->andWhere(['webmentions.parentId' => null]);
         }
 
         return true;

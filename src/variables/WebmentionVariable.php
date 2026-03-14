@@ -76,6 +76,29 @@ class WebmentionVariable
     }
 
     /**
+     * Gets webmentions for an element organized as a threaded tree.
+     *
+     * @param ElementInterface $element
+     * @return Webmention[]
+     */
+    public function getThreadedWebmentionsForElement(ElementInterface $element): array
+    {
+        return Plugin::getInstance()->webmentions->getThreadedWebmentionsForElement($element);
+    }
+
+    /**
+     * Gets webmentions for a URL organized as a threaded tree.
+     *
+     * @param string|null $url
+     * @return Webmention[]
+     */
+    public function getThreadedWebmentions(?string $url = null): array
+    {
+        $all = $this->getWebmentions($url);
+        return Plugin::getInstance()->webmentions->buildThread($all);
+    }
+
+    /**
      * Returns the full URL for the webmention endpoint
      *
      * @return string
