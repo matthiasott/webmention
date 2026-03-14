@@ -623,22 +623,35 @@ class Webmentions extends Component
             Craft::$app->images->cleanImage($tempPath);
         }
 
-        // Save avatar to asset folder
-        $asset = new Asset();
-        $asset->tempFilePath = $tempPath;
-        $asset->newFilename = $fileName;
-        $asset->newFolderId = $folder->id;
-        $asset->avoidFilenameConflicts = true;
-        if ($alt) {
-            $asset->alt = $alt;
+        // Save avatar to asset folder, with retries for transient stream errors
+        $maxAttempts = 3;
+        $retryDelay = 3; // seconds
+        $asset = null;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $asset = new Asset();
+            $asset->tempFilePath = $tempPath;
+            $asset->newFilename = $fileName;
+            $asset->newFolderId = $folder->id;
+            $asset->avoidFilenameConflicts = true;
+            if ($alt) {
+                $asset->alt = $alt;
+            }
+
+            if (Craft::$app->elements->saveElement($asset)) {
+                return $asset;
+            }
+
+            $errors = implode(', ', $asset->getFirstErrors());
+            if ($attempt < $maxAttempts) {
+                Craft::warning(sprintf('Couldn\'t save avatar asset (attempt %d/%d): %s — retrying in %ds…', $attempt, $maxAttempts, $errors, $retryDelay), __METHOD__);
+                sleep($retryDelay);
+            } else {
+                Craft::warning(sprintf('Couldn\'t save avatar asset (attempt %d/%d): %s', $attempt, $maxAttempts, $errors), __METHOD__);
+            }
         }
 
-        if (!Craft::$app->elements->saveElement($asset)) {
-            Craft::warning(sprintf('Couldn\'t save avatar asset: %s', implode(', ', $asset->getFirstErrors())), __METHOD__);
-            return null;
-        }
-
-        return $asset;
+        return null;
     }
 
     /**
