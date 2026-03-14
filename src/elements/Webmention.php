@@ -77,6 +77,7 @@ class Webmention extends Element
             'type' => Craft::t('webmention', 'Type'),
             'host' => Craft::t('webmention', 'Host'),
             'properties' => Craft::t('webmention', 'Properties'),
+            'parentId' => Craft::t('webmention', 'In Reply To'),
             'published' => Craft::t('webmention', 'Published on'),
             ...parent::defineTableAttributes(),
         ];
@@ -133,6 +134,7 @@ class Webmention extends Element
             'authorName' => $this->authorAttributeHtml(),
             'source' => $this->sourceAttributeHtml(),
             'target' => $this->targetAttributeHtml(),
+            'parentId' => $this->parentAttributeHtml(),
             'type' => Html::encode(ucfirst($this->type)),
             default => parent::attributeHtml($attribute),
         };
@@ -176,6 +178,20 @@ class Webmention extends Element
         }
 
         return Html::a(Html::encode($label), $this->source, ['target' => '_blank']);
+    }
+
+    private function parentAttributeHtml(): string
+    {
+        if (!$this->parentId) {
+            return '';
+        }
+
+        $parent = self::findOne($this->parentId);
+        if ($parent) {
+            return Cp::elementChipHtml($parent);
+        }
+
+        return Html::encode((string)$this->parentId);
     }
 
     private function targetAttributeHtml(bool $chromeless = false): string

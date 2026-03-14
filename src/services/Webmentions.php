@@ -368,6 +368,44 @@ class Webmentions extends Component
     }
 
     /**
+     * Extract a Mastodon-style status identifier from a URL.
+     *
+     * Mastodon uses two URL formats for the same status:
+     * - Canonical: https://instance/@user/123456
+     * - Web client: https://instance/web/statuses/123456
+     *
+     * Returns "host:statusId" if the URL matches either pattern, or null otherwise.
+     */
+    private function extractMastodonStatusId(string $url): ?string
+    {
+        $parsed = parse_url($url);
+        if (!$parsed || empty($parsed['host']) || empty($parsed['path'])) {
+            return null;
+        }
+
+        // URLs with fragments (e.g. #favorited-by-..., #reblogged-by-...) are
+        // derivative interactions (likes/reposts), not the original status
+        if (!empty($parsed['fragment'])) {
+            return null;
+        }
+
+        $host = strtolower($parsed['host']);
+        $path = $parsed['path'];
+
+        // Match /web/statuses/{id}
+        if (preg_match('#^/web/statuses/(\d+)$#', $path, $m)) {
+            return $host . ':' . $m[1];
+        }
+
+        // Match /@user/{id}
+        if (preg_match('#^/@[^/]+/(\d+)$#', $path, $m)) {
+            return $host . ':' . $m[1];
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve a relative URL against a base URL
      *
      * @param string $url
@@ -962,6 +1000,28 @@ class Webmentions extends Component
             if ($parent && $parent->id !== $selfId) {
                 return $parent->id;
             }
+
+            // Fallback: match by Mastodon status ID (handles /web/statuses/{id} vs /@user/{id})
+            $statusId = $this->extractMastodonStatusId($replyUrl);
+            if ($statusId) {
+                $parsed = parse_url($replyUrl);
+                $host = strtolower($parsed['host'] ?? '');
+                $id = explode(':', $statusId)[1];
+
+                $parent = Webmention::find()
+                    ->where(['like', 'webmentions.hEntryUrl', $host . '/@%/' . $id, false])
+                    ->one();
+
+                if (!$parent) {
+                    $parent = Webmention::find()
+                        ->where(['like', 'webmentions.hEntryUrl', $host . '/web/statuses/' . $id, false])
+                        ->one();
+                }
+
+                if ($parent && $parent->id !== $selfId) {
+                    return $parent->id;
+                }
+            }
         }
 
         return null;
@@ -1007,6 +1067,15 @@ class Webmentions extends Component
 
                 foreach ($urls as $url) {
                     if ($normalized === $this->normalizeUrl($url)) {
+                        $candidate->parentId = $webmention->id;
+                        Craft::$app->elements->saveElement($candidate);
+                        break 2;
+                    }
+
+                    // Fallback: match by Mastodon status ID
+                    $replyStatusId = $this->extractMastodonStatusId($replyUrl);
+                    $urlStatusId = $this->extractMastodonStatusId($url);
+                    if ($replyStatusId && $urlStatusId && $replyStatusId === $urlStatusId) {
                         $candidate->parentId = $webmention->id;
                         Craft::$app->elements->saveElement($candidate);
                         break 2;

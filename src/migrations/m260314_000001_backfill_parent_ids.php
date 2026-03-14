@@ -5,28 +5,22 @@ namespace matthiasott\webmention\migrations;
 use craft\db\Migration;
 use matthiasott\webmention\records\Webmention;
 
-class m260314_000000_parent_id extends Migration
+/**
+ * Re-runs the parentId backfill with improved Mastodon URL matching.
+ * The original migration couldn't match /web/statuses/{id} against /@user/{id}.
+ */
+class m260314_000001_backfill_parent_ids extends Migration
 {
     public function safeUp(): bool
     {
-        $tableName = Webmention::tableName();
-
-        $this->addColumn($tableName, 'parentId', $this->integer()->after('properties'));
-        $this->createIndex(null, $tableName, ['parentId'], false);
-        $this->addForeignKey(null, $tableName, ['parentId'], $tableName, ['id'], 'SET NULL', null);
-
-        // Retroactively resolve parent IDs for existing webmentions that have in-reply-to data
         $this->resolveExistingParentIds();
-
         return true;
     }
 
     public function safeDown(): bool
     {
-        $tableName = Webmention::tableName();
-        $this->dropForeignKeyIfExists($tableName, ['parentId']);
-        $this->dropIndexIfExists($tableName, ['parentId']);
-        $this->dropColumn($tableName, 'parentId');
+        // Reset all parentId values (reversible)
+        $this->update(Webmention::tableName(), ['parentId' => null], ['not', ['parentId' => null]]);
         return true;
     }
 
@@ -34,26 +28,22 @@ class m260314_000000_parent_id extends Migration
     {
         $tableName = Webmention::tableName();
 
-        // Fetch all webmentions with their properties
         $webmentions = (new \craft\db\Query())
             ->select(['id', 'source', 'hEntryUrl', 'target', 'properties'])
             ->from($tableName)
             ->all();
 
-        // Build lookup maps for matching: source URL -> id, hEntryUrl -> id
+        // Build lookup maps
         $sourceMap = [];
         $hEntryMap = [];
-        $statusIdMap = []; // Mastodon status ID -> webmention id
+        $statusIdMap = [];
         foreach ($webmentions as $wm) {
             if (!empty($wm['source'])) {
-                $normalized = $this->simpleNormalize($wm['source']);
-                $sourceMap[$normalized] = (int)$wm['id'];
+                $sourceMap[$this->simpleNormalize($wm['source'])] = (int)$wm['id'];
             }
             if (!empty($wm['hEntryUrl'])) {
-                $normalized = $this->simpleNormalize($wm['hEntryUrl']);
-                $hEntryMap[$normalized] = (int)$wm['id'];
+                $hEntryMap[$this->simpleNormalize($wm['hEntryUrl'])] = (int)$wm['id'];
 
-                // Also index by Mastodon status ID (handles /@user/{id} format)
                 $statusId = $this->extractMastodonStatusId($wm['hEntryUrl']);
                 if ($statusId) {
                     $statusIdMap[$statusId] = (int)$wm['id'];
@@ -61,6 +51,7 @@ class m260314_000000_parent_id extends Migration
             }
         }
 
+        $matched = 0;
         foreach ($webmentions as $wm) {
             $properties = is_string($wm['properties']) ? json_decode($wm['properties'], true) : $wm['properties'];
             if (empty($properties['in-reply-to'])) {
@@ -73,15 +64,12 @@ class m260314_000000_parent_id extends Migration
             foreach ($replyToUrls as $replyUrl) {
                 $normalized = $this->simpleNormalize($replyUrl);
 
-                // Skip if it points to the target post itself (that's a top-level comment)
                 if ($normalized === $targetNormalized) {
                     continue;
                 }
 
-                // Try to match against hEntryUrl first, then source
                 $parentId = $hEntryMap[$normalized] ?? $sourceMap[$normalized] ?? null;
 
-                // Fallback: match by Mastodon status ID (/web/statuses/{id} ↔ /@user/{id})
                 if ($parentId === null) {
                     $statusId = $this->extractMastodonStatusId($replyUrl);
                     if ($statusId) {
@@ -89,13 +77,15 @@ class m260314_000000_parent_id extends Migration
                     }
                 }
 
-                // Don't set self as parent
                 if ($parentId !== null && $parentId !== (int)$wm['id']) {
                     $this->update($tableName, ['parentId' => $parentId], ['id' => $wm['id']]);
+                    $matched++;
                     break;
                 }
             }
         }
+
+        echo "    > Matched $matched webmentions to their parents.\n";
     }
 
     private function extractInReplyToUrls(array $inReplyTo): array
@@ -111,10 +101,6 @@ class m260314_000000_parent_id extends Migration
         return $urls;
     }
 
-    /**
-     * Extract a Mastodon-style status identifier from a URL.
-     * Returns "host:statusId" for URLs like /web/statuses/{id} or /@user/{id}.
-     */
     private function extractMastodonStatusId(string $url): ?string
     {
         $parsed = parse_url($url);
@@ -158,5 +144,4 @@ class m260314_000000_parent_id extends Migration
 
         return $scheme . '://' . $host . $path;
     }
-
 }

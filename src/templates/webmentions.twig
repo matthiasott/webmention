@@ -1,20 +1,20 @@
 {% macro renderWebmention(block, depth, maxDepth, useThreaded) %}
   <li class="webmention webmention-{{ block.type }} p-comment h-cite">
     <article>
-      <figure class="p-author h-card">
+      <div class="p-author h-card">
         {% if block.avatar %}
           <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
             <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
                  alt="Photo of {{ block.authorName }}" loading="lazy">
           </a>
         {% endif %}
-        <figcaption class="webmention__author-name p-name"><a
+        <p class="webmention__author-name p-name"><a
               href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
             {% if block.published is not null %}
               <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
             {% endif %}
-          </a></figcaption>
-      </figure>
+          </a></p>
+      </div>
       <section class="webmention__body">
         {% if block.name %}
           <a href="{{ block.hEntryUrl }}" class="u-url">
@@ -40,7 +40,7 @@
   </li>
 {% endmacro %}
 
-<section class="webmentions container" aria-label="Webmentions">
+<section class="webmentions container" aria-labelledby="webmentions-heading">
   {% set element = craft.app.urlManager.getMatchedElement() %}
   {% set settings = craft.app.plugins.getPlugin('webmention').settings %}
   {% set useThreaded = settings.useThreadedDisplay ?? true %}
@@ -55,13 +55,11 @@
   {% set reposts = (element ? craft.webmention.getWebmentionsForElementByType(element, 'repost') : craft.webmention.getWebmentions(url))|sort((a, b) => a.published <=> b.published) %}
 
   {% set nummentions = mentions|length %}
-  {% set likescounter = 0 %}
-  {% set repostscounter = 0 %}
 
-  <h2>{{ nummentions }} Webmention{% if nummentions != 1 %}s{% endif %}</h2>
+  <h2 id="webmentions-heading">{{ nummentions }} Webmention{% if nummentions != 1 %}s{% endif %}</h2>
   {% if nummentions == 0 %}<p>¯\_(ツ)_/¯</p>
   {% else %}
-    <ol class="webmention__list" role="list" aria-label="Mentions and comments">
+    <ol class="webmention__list" role="list">
       {% for block in mentions %}
         {% if (block.type == "mention") or (block.type == "comment") %}
           {{ _self.renderWebmention(block, 0, 5, useThreaded) }}
@@ -69,65 +67,75 @@
       {% endfor %}
     </ol>
 
-    {% for block in likes %}
-      {% if block.type == "like" %}
-        {% if likescounter == 0 %}
-          <h3>{{ likes|length }} Like{% if likes|length > 1 %}s{% endif %}</h3>
-          {% set likescounter = 1 %}
-        {% endif %}
-        <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
-          <figure class="p-author h-card">
-            {% if block.avatar %}
-              <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
-                     alt="Photo of {{ block.authorName }}" loading="lazy">
-              </a>
+    {% if likes|length %}
+      <section class="webmentions__likes" aria-labelledby="webmentions-likes-heading">
+        <h3 id="webmentions-likes-heading">{{ likes|length }} Like{% if likes|length > 1 %}s{% endif %}</h3>
+        <ul class="webmention__list" role="list">
+          {% for block in likes %}
+            {% if block.type == "like" %}
+              <li class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
+                <article>
+                  <div class="p-author h-card">
+                    {% if block.avatar %}
+                      <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
+                        <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
+                             alt="Photo of {{ block.authorName }}" loading="lazy">
+                      </a>
+                    {% endif %}
+                    <p class="webmention__author-name p-name"><a
+                          href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
+                        {% if block.published is not null %}
+                        <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                        {% endif %}
+                      </a></p>
+                  </div>
+                </article>
+              </li>
             {% endif %}
-            <figcaption class="webmention__author-name p-name"><a
-                  href="{{ block.authorUrl }}">{{ block.authorName }}</a><a href="{{ block.hEntryUrl }}" class="u-url">
-                {% if block.published is not null %}
-                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
-                {% endif %}
-              </a></figcaption>
-          </figure>
-        </article>
-      {% endif %}
-    {% endfor %}
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
 
-    {% for block in reposts %}
-      {% if block.type == "repost" %}
-        {% if repostscounter == 0 %}
-        <h3>{{ reposts|length }} Repost{% if reposts|length > 1 %}s{% endif %}</h3>
-        {% set repostscounter = 1 %}
-        {% endif %}
-        <article class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
-          <figure class="p-author h-card">
-            {% if block.avatar %}
-              <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
-                <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
-                     alt="Photo of {{ block.authorName }}" loading="lazy">
-              </a>
+    {% if reposts|length %}
+      <section class="webmentions__reposts" aria-labelledby="webmentions-reposts-heading">
+        <h3 id="webmentions-reposts-heading">{{ reposts|length }} Repost{% if reposts|length > 1 %}s{% endif %}</h3>
+        <ul class="webmention__list" role="list">
+          {% for block in reposts %}
+            {% if block.type == "repost" %}
+              <li class="webmention webmention-{{ block.type }} p-{{ block.type }} h-cite">
+                <article>
+                  <div class="p-author h-card">
+                    {% if block.avatar %}
+                      <a href="{{ block.authorUrl }}" class="avatar" title="{{ block.authorName }}">
+                        <img class="webmention__author-photo u-photo" src="{{ block.avatar.getUrl({ width: 100, height: 100}) }}"
+                             alt="Photo of {{ block.authorName }}" loading="lazy">
+                      </a>
+                    {% endif %}
+                    <p class="webmention__author-name p-name">
+                      <a href="{{ block.authorUrl }}">{{ block.authorName }}</a>
+                      {% if block.published is not null %}
+                      <a href="{{ block.hEntryUrl }}" class="u-url">
+                        <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
+                      </a>
+                      {% endif %}
+                    </p>
+                  </div>
+                  {% if block.name %}
+                    <section class="webmention__body">
+                      <a href="{{ block.hEntryUrl }}" class="u-url">
+                        <h3 class="webmention__name p-content p-name">
+                          {{ block.name }}
+                        </h3>
+                      </a>
+                    </section>
+                  {% endif %}
+                </article>
+              </li>
             {% endif %}
-            <figcaption class="webmention__author-name p-name">
-              <a href="{{ block.authorUrl }}">{{ block.authorName }}</a>
-              {% if block.published is not null %}
-              <a href="{{ block.hEntryUrl }}" class="u-url">
-                <time datetime="{{ block.published|date('Y-m-d H:i:s') }}" class="dt-published">{{ block.published.format('j F Y | H:i') }}</time>
-              </a>
-              {% endif %}
-              </figcaption>
-          </figure>
-          <section class="webmention__body">
-            {% if block.name and block.type != 'like' %}
-              <a href="{{ block.hEntryUrl }}" class="u-url">
-                <h3 class="webmention__name p-content p-name">
-                  {{ block.name }}
-                </h3>
-              </a>
-            {% endif %}
-          </section>
-        </article>
-      {% endif %}
-    {% endfor %}
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
   {% endif %}
 </section>
