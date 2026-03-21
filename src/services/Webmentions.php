@@ -603,7 +603,20 @@ class Webmentions extends Component
         return $model;
     }
 
-
+    /**
+     * Downloads a remote avatar image and saves it as a Craft asset in the configured avatar folder.
+     *
+     * If an asset with the same hashed filename already exists, it is returned immediately
+     * without re-downloading or re-saving, ensuring that multiple webmentions from the same
+     * author reuse the same avatar asset.
+     *
+     * The temp file is written to a unique path to prevent race conditions when concurrent
+     * queue jobs process webmentions from the same author simultaneously.
+     *
+     * @param string $url The remote URL of the avatar image
+     * @param string|null $alt Optional alt text for the asset
+     * @return Asset|null The saved or existing asset, or null on failure
+     */
 
     private function saveAsset(string $url, ?string $alt = null): ?Asset
     {
@@ -612,7 +625,8 @@ class Webmentions extends Component
             return null;
         }
 
-        // get remote image and store in temp path with a hashed filename
+        $hashedFileName = sha1($url);
+
         $client = Craft::createGuzzleClient();
         try {
             $response = $client->get($url, [
@@ -625,19 +639,13 @@ class Webmentions extends Component
 
         $body = (string) $response->getBody();
 
-        $hashedFileName = sha1($url);
-
-        $fileExtension = (pathinfo($url, PATHINFO_EXTENSION));
+        $fileExtension = pathinfo($url, PATHINFO_EXTENSION);
 
         if (empty($fileExtension)) {
-            // First try to get MIME type from Content-Type header
             $mimeType = $response->getHeaderLine('Content-Type');
-
             if ($mimeType && str_starts_with($mimeType, 'image/')) {
                 $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
             }
-
-            // Fallback: detect from image content (already downloaded)
             if (empty($fileExtension)) {
                 $finfo = new \finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $finfo->buffer($body);
@@ -645,53 +653,46 @@ class Webmentions extends Component
                     $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
                 }
             }
-
-            // Last resort: assume JPG
             if (empty($fileExtension)) {
-                $fileExtension = "jpg";
+                $fileExtension = 'jpg';
             }
         }
 
-        $fileName = $hashedFileName . "." . $fileExtension;
+        $fileName = $hashedFileName . '.' . $fileExtension;
 
-        $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), $fileName);
+        // Re-use existing asset if already saved
+        $existing = Asset::find()
+            ->folderId($folder->id)
+            ->filename($fileName)
+            ->one();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Unique temp path to avoid race conditions between concurrent jobs
+        $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), uniqid($hashedFileName . '_', true) . '.' . $fileExtension);
         FileHelper::writeToFile($tempPath, $body);
 
-        // If it's an image, cleanse it of any malicious scripts that may be embedded
-        // (recommended unless you completely trust everyone that's uploading images)
         $ext = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
         if (Image::canManipulateAsImage($ext) && $ext !== 'svg') {
             Craft::$app->images->cleanImage($tempPath);
         }
 
-        // Save avatar to asset folder, with retries for transient stream errors
-        $maxAttempts = 3;
-        $retryDelay = 3; // seconds
-        $asset = null;
-
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $asset = new Asset();
-            $asset->tempFilePath = $tempPath;
-            $asset->newFilename = $fileName;
-            $asset->newFolderId = $folder->id;
-            $asset->avoidFilenameConflicts = true;
-            if ($alt) {
-                $asset->alt = $alt;
-            }
-
-            if (Craft::$app->elements->saveElement($asset)) {
-                return $asset;
-            }
-
-            $errors = implode(', ', $asset->getFirstErrors());
-            if ($attempt < $maxAttempts) {
-                Craft::warning(sprintf('Couldn\'t save avatar asset (attempt %d/%d): %s — retrying in %ds…', $attempt, $maxAttempts, $errors, $retryDelay), __METHOD__);
-                sleep($retryDelay);
-            } else {
-                Craft::warning(sprintf('Couldn\'t save avatar asset (attempt %d/%d): %s', $attempt, $maxAttempts, $errors), __METHOD__);
-            }
+        $asset = new Asset();
+        $asset->tempFilePath = $tempPath;
+        $asset->newFilename = $fileName;
+        $asset->newFolderId = $folder->id;
+        $asset->avoidFilenameConflicts = true;
+        if ($alt) {
+            $asset->alt = $alt;
         }
 
+        if (Craft::$app->elements->saveElement($asset)) {
+            return $asset;
+        }
+
+        Craft::warning('Couldn\'t save avatar asset: ' . implode(', ', $asset->getFirstErrors()), __METHOD__);
         return null;
     }
 

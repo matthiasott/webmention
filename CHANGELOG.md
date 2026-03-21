@@ -1,5 +1,13 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.1.2 – 2026-03-21
+
+- Fixed a race condition where concurrent queue jobs processing webmentions from the same author would write to the same temporary file path, causing avatar assets to fail with an "Unable to copy stream" error.
+- Avatar assets are now reused across webmentions from the same author instead of being re-downloaded and re-saved for each incoming webmention.
+
+## 1.1.1 – 2026-03-14
+- Missed to bump up the $schemaVersion…
+
 ## 1.1.0 – 2026-03-14
 
 - Added threaded/nested display for webmentions. Replies to other webmentions are now tracked via `in-reply-to` from mf2 data and displayed as nested threads.
