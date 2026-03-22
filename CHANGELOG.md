@@ -1,5 +1,13 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.1.3 – 2026-03-22
+
+- Fixed avatar saving failures in queue context caused by the volume filesystem using a relative Base Path that didn't resolve correctly in CLI.
+- Fixed file extension detection for avatar URLs containing query strings (e.g. `avatar.webp?cb=123`).
+- Added validation for empty or truncated avatar responses from CDNs.
+- Added error handling for `cleanImage()` failures that could destroy the temp file before asset saving.
+- Fixed a crash when processing Bluesky webmentions with `at://` protocol URIs in `in-reply-to` data.
+
 ## 1.1.2 – 2026-03-21
 
 - Fixed a race condition where concurrent queue jobs processing webmentions from the same author would write to the same temporary file path, causing avatar assets to fail with an "Unable to copy stream" error.
