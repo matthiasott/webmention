@@ -613,11 +613,13 @@ class Webmentions extends Component
      * The temp file is written to a unique path to prevent race conditions when concurrent
      * queue jobs process webmentions from the same author simultaneously.
      *
+     * Guards against empty/truncated responses, query strings in avatar URLs polluting the
+     * file extension, and cleanImage() failures that can destroy the temp file.
+     *
      * @param string $url The remote URL of the avatar image
      * @param string|null $alt Optional alt text for the asset
      * @return Asset|null The saved or existing asset, or null on failure
      */
-
     private function saveAsset(string $url, ?string $alt = null): ?Asset
     {
         $folder = $this->getAvatarFolder();
@@ -633,13 +635,29 @@ class Webmentions extends Component
                 RequestOptions::CONNECT_TIMEOUT => 10,
                 RequestOptions::TIMEOUT => 30,
             ]);
-        } catch (GuzzleException) {
+        } catch (GuzzleException $e) {
+            Craft::warning("Avatar download failed for {$url}: {$e->getMessage()}", __METHOD__);
             return null;
         }
 
         $body = (string) $response->getBody();
 
-        $fileExtension = pathinfo($url, PATHINFO_EXTENSION);
+        if (strlen($body) < 100) {
+            Craft::warning(sprintf(
+                'Avatar response too small (%d bytes) for %s (HTTP %d, Content-Type: %s)',
+                strlen($body),
+                $url,
+                $response->getStatusCode(),
+                $response->getHeaderLine('Content-Type')
+            ), __METHOD__);
+            return null;
+        }
+
+        // Strip query strings before extracting extension
+        $fileExtension = pathinfo(
+            parse_url($url, PHP_URL_PATH) ?: $url,
+            PATHINFO_EXTENSION
+        );
 
         if (empty($fileExtension)) {
             $mimeType = $response->getHeaderLine('Content-Type');
@@ -671,12 +689,26 @@ class Webmentions extends Component
         }
 
         // Unique temp path to avoid race conditions between concurrent jobs
-        $tempPath = sprintf('%s/%s', Craft::$app->path->getTempPath(), uniqid($hashedFileName . '_', true) . '.' . $fileExtension);
+        $tempPath = sprintf(
+            '%s/%s',
+            Craft::$app->path->getTempPath(),
+            uniqid($hashedFileName . '_', true) . '.' . $fileExtension
+        );
         FileHelper::writeToFile($tempPath, $body);
 
         $ext = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
         if (Image::canManipulateAsImage($ext) && $ext !== 'svg') {
-            Craft::$app->images->cleanImage($tempPath);
+            try {
+                Craft::$app->images->cleanImage($tempPath);
+            } catch (\Throwable $e) {
+                Craft::warning(
+                    "cleanImage() failed for {$tempPath}: {$e->getMessage()}",
+                    __METHOD__
+                );
+                if (!file_exists($tempPath) || filesize($tempPath) === 0) {
+                    FileHelper::writeToFile($tempPath, $body);
+                }
+            }
         }
 
         $asset = new Asset();
@@ -692,7 +724,10 @@ class Webmentions extends Component
             return $asset;
         }
 
-        Craft::warning('Couldn\'t save avatar asset: ' . implode(', ', $asset->getFirstErrors()), __METHOD__);
+        Craft::warning(
+            'Couldn\'t save avatar asset: ' . implode(', ', $asset->getFirstErrors()),
+            __METHOD__
+        );
         return null;
     }
 
