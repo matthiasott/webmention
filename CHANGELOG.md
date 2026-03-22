@@ -1,5 +1,19 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.2.0 – 2026-03-22
+
+### Added
+- Added a Failed Webmentions view to the control panel. Webmentions that cannot be processed are now recorded in a new `webmention_failures` table instead of disappearing silently into the logs.
+- Failed webmentions are shown in a dedicated "Failed" subnav item with a badge displaying the current failure count.
+- The failures table shows source, target, error message, attempt count, and last attempted timestamp for each failure.
+- Added per-row Retry and Dismiss actions. Retry re-queues the webmention for processing and removes the failure record; a successful retry also clears the record automatically.
+- Added bulk Retry All and Dismiss All actions above the failures table.
+- If a source+target combination fails repeatedly, the existing failure record is updated (incrementing the attempt count) rather than creating duplicates.
+- Added a `failureRetentionDays` setting (default: 30) to automatically prune old failure records.
+- Added a `webmention/cleanup/failures` console command to manually prune failure records older than the retention setting.
+- Added Bluesky author fallback via the public AT Protocol API. When a webmention from Bridgy Fed (`bsky.brid.gy`) contains no author data in its mf2, the plugin now extracts the Bluesky DID from the URL and fetches the author's display name, profile URL, and avatar from `public.api.bsky.app`. The avatar is stored locally via the existing asset saving flow.
+- Tracking parameters (`utm_*`, `fbclid`, `gclid`, and similar) are now stripped from URLs during normalization to prevent duplicate webmention records for the same source.
+
 ## 1.1.3 – 2026-03-22
 
 - Fixed avatar saving failures in queue context caused by the volume filesystem using a relative Base Path that didn't resolve correctly in CLI.
