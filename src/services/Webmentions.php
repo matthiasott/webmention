@@ -363,9 +363,45 @@ class Webmentions extends Component
             }
         }
 
-        // Add query if present
+        // Strip common tracking parameters before comparison
         if (isset($parsed['query'])) {
-            $normalized .= '?' . $parsed['query'];
+            parse_str($parsed['query'], $params);
+            $trackingPrefixes = [
+                'utm_',       // Google Analytics / general
+                'fbclid',     // Facebook
+                'gclid',      // Google Ads
+                'gclsrc',     // Google Ads
+                'dclid',      // Google Display & Video 360
+                'gbraid',     // Google Ads (iOS)
+                'wbraid',     // Google Ads (web-to-app)
+                'mc_',        // Mailchimp
+                'ck_',        // ConvertKit
+                'msclkid',    // Microsoft/Bing Ads
+                'twclid',     // Twitter/X
+                'li_fat_id',  // LinkedIn
+                'igshid',     // Instagram
+                's_kwcid',    // Adobe Analytics
+                'ttclid',     // TikTok
+                '_hsenc',     // HubSpot
+                '_hsmi',      // HubSpot
+                'mc_cid',     // Mailchimp (caught by mc_ but being explicit)
+                'mc_eid',     // Mailchimp
+                'ss_',        // various email tools
+                'vero_',      // Vero
+                'oly_',       // Omeda
+                'ref',        // general referrer param
+            ];
+            foreach (array_keys($params) as $key) {
+                foreach ($trackingPrefixes as $prefix) {
+                    if (str_starts_with(strtolower($key), $prefix)) {
+                        unset($params[$key]);
+                        break;
+                    }
+                }
+            }
+            if (!empty($params)) {
+                $normalized .= '?' . http_build_query($params);
+            }
         }
 
         return $normalized;
