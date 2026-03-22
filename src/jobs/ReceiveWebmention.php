@@ -19,32 +19,39 @@ class ReceiveWebmention extends BaseJob
 
     public function execute($queue): void
     {
-        try {
-            $service = Plugin::getInstance()->webmentions;
+        $service = Plugin::getInstance()->webmentions;
 
+        try {
             // Validate first
             $html = $service->validateWebmention($this->source, $this->target);
 
             if (!$html) {
-                Craft::warning(sprintf(
-                    'Webmention validation failed for source "%s" to target "%s"',
+                throw new \RuntimeException(sprintf(
+                    'Webmention validation failed: source "%s" does not contain a valid backlink to target "%s"',
                     $this->source,
                     $this->target
-                ), 'webmention');
-                return;
+                ));
             }
 
             $webmention = $service->parseWebmention($html, $this->source, $this->target);
             if (!$webmention) {
-                Craft::warning(sprintf(
-                    'Unable to parse webmention from source "%s" to target "%s"',
+                throw new \RuntimeException(sprintf(
+                    'Unable to parse microformats data from source "%s" targeting "%s"',
                     $this->source,
                     $this->target
-                ), 'webmention');
-                return;
+                ));
             }
 
-            Craft::$app->getElements()->saveElement($webmention);
+            if (!Craft::$app->getElements()->saveElement($webmention)) {
+                throw new \RuntimeException(sprintf(
+                    'Failed to save webmention element from source "%s": %s',
+                    $this->source,
+                    implode(', ', $webmention->getFirstErrors())
+                ));
+            }
+
+            // Success — clear any prior failure record for this source+target
+            $service->deleteFailure($this->source, $this->target);
 
             // Check if any existing webmentions are replies to this one (reverse resolution)
             $service->resolveChildWebmentions($webmention);
@@ -56,6 +63,8 @@ class ReceiveWebmention extends BaseJob
                 $this->target,
                 $e->getMessage()
             ), 'webmention');
+
+            $service->recordFailure($this->source, $this->target, $e);
         }
     }
 }

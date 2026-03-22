@@ -12,7 +12,10 @@ use craft\helpers\FileHelper;
 use craft\helpers\Html;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
+use craft\db\Query;
+use craft\helpers\Db;
 use craft\helpers\Queue;
+use craft\helpers\StringHelper;
 use craft\models\Site;
 use craft\models\VolumeFolder;
 use DateTime;
@@ -27,6 +30,7 @@ use Illuminate\Support\Collection;
 use LitEmoji\LitEmoji;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
+use matthiasott\webmention\records\WebmentionFailure;
 use matthiasott\webmention\jobs\SendWebmention;
 use matthiasott\webmention\Plugin;
 use Mf2;
@@ -1178,5 +1182,53 @@ class Webmentions extends Component
         }
 
         return $roots;
+    }
+
+    /**
+     * Records or updates a failure entry for a webmention that could not be processed.
+     * If a record already exists for the same source+target, increments attempts and updates the error.
+     */
+    public function recordFailure(string $source, string $target, \Throwable $e): void
+    {
+        $tableName = WebmentionFailure::tableName();
+        $now = Db::prepareDateForDb(new \DateTime());
+
+        $existing = (new Query())
+            ->from($tableName)
+            ->where(['source' => $source, 'target' => $target])
+            ->one();
+
+        if ($existing) {
+            Craft::$app->db->createCommand()->update($tableName, [
+                'errorMessage' => mb_substr($e->getMessage(), 0, 65535),
+                'errorTrace' => mb_substr($e->getTraceAsString(), 0, 65535),
+                'attempts' => $existing['attempts'] + 1,
+                'lastAttemptedAt' => $now,
+                'dateUpdated' => $now,
+            ], ['id' => $existing['id']])->execute();
+        } else {
+            Craft::$app->db->createCommand()->insert($tableName, [
+                'source' => $source,
+                'target' => $target,
+                'errorMessage' => mb_substr($e->getMessage(), 0, 65535),
+                'errorTrace' => mb_substr($e->getTraceAsString(), 0, 65535),
+                'attempts' => 1,
+                'lastAttemptedAt' => $now,
+                'dateCreated' => $now,
+                'dateUpdated' => $now,
+                'uid' => StringHelper::UUID(),
+            ])->execute();
+        }
+    }
+
+    /**
+     * Deletes any existing failure record for the given source+target pair.
+     * Called after a previously-failing webmention is successfully processed.
+     */
+    public function deleteFailure(string $source, string $target): void
+    {
+        Craft::$app->db->createCommand()
+            ->delete(WebmentionFailure::tableName(), ['source' => $source, 'target' => $target])
+            ->execute();
     }
 }

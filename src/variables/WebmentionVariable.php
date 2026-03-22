@@ -9,6 +9,7 @@ use craft\helpers\UrlHelper;
 use craft\web\View;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\Plugin;
+use matthiasott\webmention\records\WebmentionFailure;
 use Twig\Markup;
 
 /**
@@ -106,6 +107,14 @@ class WebmentionVariable
     public function endpointUrl(): string
     {
         return UrlHelper::siteUrl(Plugin::getInstance()->settings->endpointSlug);
+    }
+
+    /**
+     * Returns the count of failure records in the webmention_failures table.
+     */
+    public function getFailureCount(): int
+    {
+        return (int) WebmentionFailure::find()->count();
     }
 
     /**

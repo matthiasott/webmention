@@ -27,6 +27,7 @@ use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
 use matthiasott\webmention\models\Settings;
 use matthiasott\webmention\records\Webmention as WebmentionRecord;
+use matthiasott\webmention\records\WebmentionFailure;
 use matthiasott\webmention\services\Sender;
 use matthiasott\webmention\services\Webmentions;
 use matthiasott\webmention\variables\WebmentionVariable;
@@ -54,7 +55,7 @@ class Plugin extends BasePlugin
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
     public bool $hasReadOnlyCpSettings = true;
-    public string $schemaVersion = '1.1.2';
+    public string $schemaVersion = '1.2.0';
 
     public function init(): void
     {
@@ -89,6 +90,11 @@ class Plugin extends BasePlugin
         Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_CP_URL_RULES, function(RegisterUrlRulesEvent $event) {
             $event->rules += [
                 'settings/webmention' => ['template' => 'webmention/settings'],
+                'webmention/failures' => 'webmention/failures/index',
+                'webmention/failures/retry' => 'webmention/failures/retry',
+                'webmention/failures/dismiss' => 'webmention/failures/dismiss',
+                'webmention/failures/retry-all' => 'webmention/failures/retry-all',
+                'webmention/failures/dismiss-all' => 'webmention/failures/dismiss-all',
             ];
         });
 
@@ -167,9 +173,23 @@ class Plugin extends BasePlugin
 
     public function getCpNavItem(): ?array
     {
+        try {
+            $failureCount = (int) WebmentionFailure::find()->count();
+        } catch (\Throwable) {
+            $failureCount = 0;
+        }
+
+        $failureLabel = $failureCount > 0
+            ? Craft::t('webmention', 'Failed') . ' (' . $failureCount . ')'
+            : Craft::t('webmention', 'Failed');
+
         return [
             ...parent::getCpNavItem(),
             'label' => Craft::t('webmention', 'Webmentions'),
+            'subnav' => [
+                'webmentions' => ['label' => Craft::t('webmention', 'All Webmentions'), 'url' => 'webmention'],
+                'failures' => ['label' => $failureLabel, 'url' => 'webmention/failures'],
+            ],
         ];
     }
 

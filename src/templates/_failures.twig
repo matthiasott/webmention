@@ -1,0 +1,96 @@
+{% extends "_layouts/cp.twig" %}
+
+{% set title = 'Failed Webmentions'|t('webmention') %}
+{% set selectedSubnavItem = 'failures' %}
+
+{% block actionButton %}
+  {% if failures|length %}
+    <form method="post" style="display:inline">
+      {{ csrfInput() }}
+      {{ actionInput('webmention/failures/retry-all') }}
+      <button type="submit" class="btn submit">{{ 'Retry All'|t('webmention') }}</button>
+    </form>
+    <form method="post" style="display:inline; margin-left: 5px;">
+      {{ csrfInput() }}
+      {{ actionInput('webmention/failures/dismiss-all') }}
+      <button type="submit" class="btn">{{ 'Dismiss All'|t('webmention') }}</button>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% css %}
+  .failures-table-wrap { overflow-x: auto; }
+  .failures-table th.col-actions,
+  .failures-table td.col-actions {
+    position: sticky;
+    right: 0;
+    background: var(--white);
+    box-shadow: -1px 0 0 rgb(var(--hairline-color-rgb));
+    z-index: 1;
+  }
+  tr:hover .failures-table td.col-actions {
+    background: rgb(var(--gray-050-rgb));
+  }
+{% endcss %}
+
+{% block content %}
+  {% if failures|length %}
+    <div class="tableview tablepane failures-table-wrap">
+      <table class="data fullwidth failures-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Source'|t('webmention') }}</th>
+            <th scope="col">{{ 'Target'|t('webmention') }}</th>
+            <th scope="col">{{ 'Error'|t('webmention') }}</th>
+            <th scope="col">{{ 'First Seen'|t('webmention') }}</th>
+            <th scope="col" class="thin">{{ 'Attempts'|t('webmention') }}</th>
+            <th scope="col">{{ 'Last Attempted'|t('webmention') }}</th>
+            <th scope="col" class="thin col-actions">{{ 'Actions'|t('webmention') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for failure in failures %}
+            <tr>
+              <td>
+                <a href="{{ failure.source }}" target="_blank" rel="noopener" title="{{ failure.source }}">
+                  {{- failure.source|length > 60 ? failure.source[:57] ~ '…' : failure.source -}}
+                </a>
+              </td>
+              <td>
+                <a href="{{ failure.target }}" target="_blank" rel="noopener" title="{{ failure.target }}">
+                  {{- failure.target|length > 60 ? failure.target[:57] ~ '…' : failure.target -}}
+                </a>
+              </td>
+              <td title="{{ failure.errorMessage }}">
+                {{- failure.errorMessage|length > 100 ? failure.errorMessage[:97] ~ '…' : failure.errorMessage -}}
+              </td>
+              <td><code>{{ failure.dateCreated|date('Y-m-d H:i:s') }}</code></td>
+              <td class="thin">{{ failure.attempts }}</td>
+              <td title="{{ failure.lastAttemptedAt }}">
+                {{ craft.app.formatter.asRelativeTime(failure.lastAttemptedAt) }}
+              </td>
+              <td class="thin nowrap col-actions">
+                <form method="post" style="display:inline">
+                  {{ csrfInput() }}
+                  {{ actionInput('webmention/failures/retry') }}
+                  <input type="hidden" name="id" value="{{ failure.id }}">
+                  <button type="submit" class="btn small">{{ 'Retry'|t('webmention') }}</button>
+                </form>
+                <form method="post" style="display:inline">
+                  {{ csrfInput() }}
+                  {{ actionInput('webmention/failures/dismiss') }}
+                  <input type="hidden" name="id" value="{{ failure.id }}">
+                  <button type="submit" class="btn small">{{ 'Dismiss'|t('webmention') }}</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="zilch">
+      {{ 'No failed webmentions.'|t('webmention') }}
+    </div>
+  {% endif %}
+{% endblock %}

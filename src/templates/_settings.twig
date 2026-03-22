@@ -64,6 +64,16 @@
   on: settings.useBridgy,
 }) }}
 
+{{ forms.textField({
+  label: 'Failure Retention (Days)',
+  instructions: 'Number of days to keep failed webmention records. Run <code>php craft webmention/cleanup/failures</code> to purge records older than this value.',
+  id: 'failureRetentionDays',
+  name: 'failureRetentionDays',
+  value: settings.failureRetentionDays,
+  type: 'number',
+  min: 1,
+}) }}
+
 {{ forms.lightswitchField({
   label: 'Threaded Display',
   instructions: 'When enabled, replies to other webmentions are displayed as nested threads in the default template. When disabled, all webmentions are shown in a flat list.',

@@ -15,6 +15,7 @@ class Settings extends Model
     public string $avatarPath = 'avatars/';
     public bool $useThreadedDisplay = true;
     public array $entryTypes = [];
+    public int $failureRetentionDays = 30;
 
     public function init(): void
     {

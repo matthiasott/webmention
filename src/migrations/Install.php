@@ -5,6 +5,7 @@ namespace matthiasott\webmention\migrations;
 use craft\db\Migration;
 use craft\db\Table;
 use matthiasott\webmention\records\Webmention;
+use matthiasott\webmention\records\WebmentionFailure;
 
 class Install extends Migration
 {
@@ -47,11 +48,28 @@ class Install extends Migration
         $this->addForeignKey(null, $tableName, ['avatarId'], Table::ASSETS, ['id'], 'SET NULL', null);
         $this->addForeignKey(null, $tableName, ['parentId'], $tableName, ['id'], 'SET NULL', null);
 
+        $failuresTable = WebmentionFailure::tableName();
+        $this->createTable($failuresTable, [
+            'id' => $this->primaryKey(),
+            'source' => $this->string(384)->notNull(),
+            'target' => $this->string(384)->notNull(),
+            'errorMessage' => $this->text()->notNull(),
+            'errorTrace' => $this->text(),
+            'attempts' => $this->integer()->notNull()->defaultValue(1),
+            'lastAttemptedAt' => $this->dateTime()->notNull(),
+            'dateCreated' => $this->dateTime()->notNull(),
+            'dateUpdated' => $this->dateTime()->notNull(),
+            'uid' => $this->uid(),
+        ]);
+        $this->createIndex(null, $failuresTable, ['source', 'target'], true);
+        $this->createIndex(null, $failuresTable, ['lastAttemptedAt'], false);
+
         return true;
     }
 
     public function safeDown(): bool
     {
+        $this->dropTableIfExists(WebmentionFailure::tableName());
         $this->dropTableIfExists(Webmention::tableName());
         return true;
     }
