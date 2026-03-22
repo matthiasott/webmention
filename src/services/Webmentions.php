@@ -583,6 +583,25 @@ class Webmentions extends Component
             }
         }
 
+        // Bluesky author fallback via public API.
+        // Bridgy Fed converts Bluesky posts to HTML but strips all h-card data, so mf2 parsing
+        // yields no author. If we still have no name and the URL points to Bluesky/Bridgy Fed,
+        // look up the author via the public AT Protocol API using the DID embedded in the URL.
+        if (empty($result['author']['name'])) {
+            $entryUrl = $result['url'] ?? $source;
+            $isBridgyFed = str_contains($source, 'bsky.brid.gy');
+            $isBlueskyUrl = str_contains($entryUrl, 'bsky.app');
+
+            if ($isBridgyFed || $isBlueskyUrl) {
+                $blueskyAuthor = $this->fetchBlueskyAuthor($entryUrl);
+                if ($blueskyAuthor) {
+                    $result['author']['name'] = $result['author']['name'] ?: $blueskyAuthor['name'];
+                    $result['author']['url'] = $result['author']['url'] ?: $blueskyAuthor['url'];
+                    $authorPhotoUrl = $authorPhotoUrl ?: $blueskyAuthor['photo'];
+                }
+            }
+        }
+
         // Author photo should be saved locally to avoid exploits.
         // If an author photo is available get the image and save it to assets
         if ($authorPhotoUrl) {
@@ -1266,5 +1285,57 @@ class Webmentions extends Component
         Craft::$app->db->createCommand()
             ->delete(WebmentionFailure::tableName(), ['source' => $source, 'target' => $target])
             ->execute();
+    }
+
+    /**
+     * Extracts a Bluesky DID from any URL that contains one.
+     * Matches both did:plc: and did:web: methods.
+     */
+    private function extractBlueskyDid(string $url): ?string
+    {
+        if (preg_match('/did:(plc|web):[a-zA-Z0-9._:%-]+/', $url, $matches)) {
+            return $matches[0];
+        }
+        return null;
+    }
+
+    /**
+     * Fetches Bluesky author data from the public AT Protocol API using a DID
+     * extracted from the given URL. Returns an array with 'name', 'url', and
+     * 'photo' keys, or null if no DID could be found or the API call fails.
+     * This is a best-effort fallback — it never throws.
+     */
+    private function fetchBlueskyAuthor(string $url): ?array
+    {
+        $did = $this->extractBlueskyDid($url);
+        if ($did === null) {
+            return null;
+        }
+
+        try {
+            $client = Craft::createGuzzleClient();
+            $response = $client->get('https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile', [
+                RequestOptions::QUERY => ['actor' => $did],
+                RequestOptions::CONNECT_TIMEOUT => 5,
+                RequestOptions::TIMEOUT => 10,
+            ]);
+
+            $data = json_decode((string)$response->getBody(), true);
+            if (!is_array($data) || empty($data['handle'])) {
+                return null;
+            }
+
+            $handle = $data['handle'];
+            $displayName = !empty($data['displayName']) ? $data['displayName'] : $handle;
+
+            return [
+                'name' => $displayName,
+                'url' => 'https://bsky.app/profile/' . $handle,
+                'photo' => $data['avatar'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            Craft::warning('Bluesky author API fallback failed for DID ' . $did . ': ' . $e->getMessage(), __METHOD__);
+            return null;
+        }
     }
 }
