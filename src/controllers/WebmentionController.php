@@ -51,6 +51,17 @@ class WebmentionController extends Controller
         $source = $this->request->getRequiredBodyParam('source');
         $target = $this->request->getRequiredBodyParam('target');
 
+        $webmentions = \matthiasott\webmention\Plugin::getInstance()->webmentions;
+        if (!$webmentions->safeUrl($source) || !$webmentions->safeUrl($target)) {
+            return $this->asRaw('Invalid source or target URL')->setStatusCode(400);
+        }
+
+        $targetHost = parse_url($target, PHP_URL_HOST);
+
+        if ($targetHost !== $this->request->getHostName()) {
+            return $this->asRaw('Target does not belong to this site')->setStatusCode(400);
+        }
+
         Queue::push(new ReceiveWebmention([
             'source' => $source,
             'target' => $target,
