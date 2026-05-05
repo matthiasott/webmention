@@ -672,15 +672,15 @@ class Webmentions extends Component
         // assign attributes
         $model->authorName = Html::encode($result['author']['name'] ?? null);
         $model->avatarId = $result['author']['avatarId'] ?? null;
-        $model->authorUrl = Html::encode($result['author']['url'] ?? null);
+        $model->authorUrl = $this->safeUrl($result['author']['url'] ?? null);
         $model->published = isset($result['published']) ? new DateTime($result['published']) : null;
         $model->name = Html::encode(mb_substr($result['name'] ?? '', 0, 255));
         $model->text = $text;
-        $model->target = Html::encode($target);
+        $model->target = $this->safeUrl($target);
         $model->targetId = $targetElement?->id;
         $model->targetSiteId = $targetElement && $targetElement->isLocalized() ? $targetElement->siteId : null;
-        $model->source = Html::encode($source);
-        $model->hEntryUrl = Html::encode($result['url'] ?? null);
+        $model->source = $this->safeUrl($source);
+        $model->hEntryUrl = $this->safeUrl($result['url'] ?? null);
         $model->host = $result['site'] ?? null;
         $model->type = $result['type'] ?? null;
         $model->properties = $entry['properties'];
