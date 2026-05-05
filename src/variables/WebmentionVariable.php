@@ -66,6 +66,17 @@ class WebmentionVariable
     }
 
     /**
+     * Returns a safe URL by validating the scheme
+     *
+     * @param string|null $url
+     * @return string|null
+     */
+    public function safeUrl(?string $url): ?string
+    {
+        return Plugin::getInstance()->webmentions->safeUrl($url);
+    }
+
+    /**
      * Get a specific webmention. If no webmention is found, returns null
      *
      * @param int $id

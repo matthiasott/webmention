@@ -3,7 +3,7 @@
     <article>
       <div class="webmention__meta">
         <a class="p-author h-card"
-          href="{{ block.authorUrl }}"
+          href="{{ craft.webmention.safeUrl(block.authorUrl) ?: '#' }}"
           title="{{ block.authorName }}">
           {% if block.avatar %}
             <img class="webmention__author-photo u-photo"
@@ -14,7 +14,7 @@
           <span class="webmention__author-name p-name">{{ block.authorName }}</span>
         </a>
 
-        <a href="{{ block.hEntryUrl }}" class="u-url">
+        <a href="{{ craft.webmention.safeUrl(block.hEntryUrl) ?: '#' }}" class="u-url">
           {% if block.published is not null %}
             <time datetime="{{ block.published|date('Y-m-d\\TH:i:sP') }}"
                   class="dt-published">
@@ -25,7 +25,7 @@
       </div>
       <div class="webmention__body">
         {% if block.name %}
-          <a href="{{ block.hEntryUrl }}" class="u-url">
+          <a href="{{ craft.webmention.safeUrl(block.hEntryUrl) ?: '#' }}" class="u-url">
             <h3 class="webmention__name p-name">{{ block.name }}</h3>
           </a>
         {% endif %}
@@ -110,7 +110,7 @@
               <article>
                 <div class="webmention__meta">
                   <a class="p-author h-card"
-                   href="{{ block.authorUrl }}"
+                   href="{{ craft.webmention.safeUrl(block.authorUrl) ?: '#' }}"
                    title="{{ block.authorName }}">
                     {% if block.avatar %}
                       <img class="webmention__author-photo u-photo"
@@ -120,7 +120,7 @@
                     {% endif %}
                     <span class="webmention__author-name p-name">{{ block.authorName }}</span>
                   </a>
-                  <a href="{{ block.hEntryUrl }}" class="u-url u-repost">
+                  <a href="{{ craft.webmention.safeUrl(block.hEntryUrl) ?: '#' }}" class="u-url u-repost">
                     {% if block.published is not null %}
                       <time datetime="{{ block.published|date('Y-m-d\\TH:i:sP') }}"
                             class="dt-published">
@@ -131,7 +131,7 @@
                 </div>
                 {% if block.name %}
                   <div class="webmention__body">
-                    <a href="{{ block.hEntryUrl }}" class="u-url">
+                    <a href="{{ craft.webmention.safeUrl(block.hEntryUrl) ?: '#' }}" class="u-url">
                       <h3 class="webmention__name p-name">{{ block.name }}</h3>
                     </a>
                   </div>
@@ -158,7 +158,7 @@
             <li class="webmention webmention-like h-cite">
               <article>
                 <a class="p-author h-card"
-                   href="{{ block.authorUrl }}"
+                   href="{{ craft.webmention.safeUrl(block.authorUrl) ?: '#' }}"
                    title="{{ block.authorName }}">
                   {% if block.avatar %}
                     <img class="webmention__author-photo u-photo"
@@ -168,7 +168,7 @@
                   {% endif %}
                   <span class="webmention__author-name p-name">{{ block.authorName }}</span>
                 </a>
-                <a href="{{ block.hEntryUrl }}" class="u-url u-like">
+                <a href="{{ craft.webmention.safeUrl(block.hEntryUrl) ?: '#' }}" class="u-url u-like">
                   {% if block.published is not null %}
                     <time datetime="{{ block.published|date('Y-m-d\\TH:i:sP') }}"
                           class="dt-published">

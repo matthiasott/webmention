@@ -52,12 +52,12 @@
           {% for failure in failures %}
             <tr>
               <td>
-                <a href="{{ failure.source }}" target="_blank" rel="noopener" title="{{ failure.source }}">
+                <a href="{{ craft.webmention.safeUrl(failure.source) ?: '#' }}" target="_blank" rel="noopener" title="{{ failure.source }}">
                   {{- failure.source|length > 60 ? failure.source[:57] ~ '…' : failure.source -}}
                 </a>
               </td>
               <td>
-                <a href="{{ failure.target }}" target="_blank" rel="noopener" title="{{ failure.target }}">
+                <a href="{{ craft.webmention.safeUrl(failure.target) ?: '#' }}" target="_blank" rel="noopener" title="{{ failure.target }}">
                   {{- failure.target|length > 60 ? failure.target[:57] ~ '…' : failure.target -}}
                 </a>
               </td>
