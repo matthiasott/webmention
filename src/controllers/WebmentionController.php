@@ -62,6 +62,15 @@ class WebmentionController extends Controller
             return $this->asRaw('Target does not belong to this site')->setStatusCode(400);
         }
 
+        $cache = Craft::$app->cache;
+        $pairKey = 'webmention:pair:' . hash('sha256', $source . '|' . $target);
+
+        if ($cache->get($pairKey)) {
+            // Already accepted this pair recently — don't queue a duplicate.
+            return $this->asRaw('')->setStatusCode(202);
+        }
+        $cache->set($pairKey, true, 300);
+
         Queue::push(new ReceiveWebmention([
             'source' => $source,
             'target' => $target,

@@ -410,26 +410,30 @@ class Webmentions extends Component
     // Html::encode is wrong layer for URLs — it escapes HTML metacharacters but does NOT sanitize schemes
     public function safeUrl(?string $url): ?string
     {
-        if ($url === null || trim($url) === '') {
+        if ($url === null) {
             return null;
         }
 
-        if (preg_match('/\s/', $url)) {
+        $url = trim($url);
+        if ($url === '' || strlen($url) > 2048 || preg_match('/\s/', $url)) {
             return null;
         }
 
-        $scheme = parse_url($url, PHP_URL_SCHEME);
-        if ($scheme === null || $scheme === false) {
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['host'])) {
             return null;
         }
 
-        $scheme = strtolower($scheme);
+        if (!empty($parts['user']) || !empty($parts['pass'])) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? '');
         if ($scheme !== 'http' && $scheme !== 'https') {
             return null;
         }
 
-        $host = parse_url($url, PHP_URL_HOST);
-        if (empty($host)) {
+        if (!preg_match('/^([a-zA-Z0-9.\-]+|\[[0-9a-fA-F:]+\])$/', $parts['host'])) {
             return null;
         }
 
