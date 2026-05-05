@@ -157,8 +157,9 @@ class Webmention extends Element
 
         $html .= Html::beginTag('div', ['class' => 'chip-content']);
 
-        if ($this->authorUrl) {
-            $html .= Html::a(Html::encode($this->authorName), $this->authorUrl, ['target' => '_blank']);
+        $safeAuthorUrl = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->authorUrl);
+        if ($safeAuthorUrl) {
+            $html .= Html::a(Html::encode($this->authorName), $safeAuthorUrl, ['target' => '_blank']);
         } else {
             $html .= Html::encode($this->authorName);
         }
@@ -177,7 +178,11 @@ class Webmention extends Element
             $label = preg_replace('/^https?:\/\//', '', $this->source);
         }
 
-        return Html::a(Html::encode($label), $this->source, ['target' => '_blank']);
+        $safeSource = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->source);
+        if ($safeSource) {
+            return Html::a(Html::encode($label), $safeSource, ['target' => '_blank']);
+        }
+        return Html::encode($label);
     }
 
     private function parentAttributeHtml(): string
@@ -208,7 +213,11 @@ class Webmention extends Element
         }
 
         $label = preg_replace('/^https?:\/\/.*?\//', '', $this->target);
-        return Html::a(Html::encode($label), $this->target, ['target' => '_blank']);
+        $safeTarget = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->target);
+        if ($safeTarget) {
+            return Html::a(Html::encode($label), $safeTarget, ['target' => '_blank']);
+        }
+        return Html::encode($label);
     }
 
     protected function metadata(): array
