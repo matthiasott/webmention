@@ -407,6 +407,35 @@ class Webmentions extends Component
         return $normalized;
     }
 
+    // Html::encode is wrong layer for URLs — it escapes HTML metacharacters but does NOT sanitize schemes
+    public function safeUrl(?string $url): ?string
+    {
+        if ($url === null || trim($url) === '') {
+            return null;
+        }
+
+        if (preg_match('/\s/', $url)) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if ($scheme === null || $scheme === false) {
+            return null;
+        }
+
+        $scheme = strtolower($scheme);
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if (empty($host)) {
+            return null;
+        }
+
+        return $url;
+    }
+
     /**
      * Extract a Mastodon-style status identifier from a URL.
      *
