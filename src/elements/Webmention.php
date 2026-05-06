@@ -17,6 +17,7 @@ use DateTime;
 use matthiasott\webmention\elements\actions\Update;
 use matthiasott\webmention\elements\conditions\WebmentionCondition;
 use matthiasott\webmention\elements\db\WebmentionQuery;
+use matthiasott\webmention\Plugin;
 use matthiasott\webmention\records\Webmention as WebmentionRecord;
 use yii\base\InvalidConfigException;
 
@@ -157,7 +158,7 @@ class Webmention extends Element
 
         $html .= Html::beginTag('div', ['class' => 'chip-content']);
 
-        $safeAuthorUrl = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->authorUrl);
+        $safeAuthorUrl = Plugin::getInstance()->webmentions->safeUrl($this->authorUrl);
         if ($safeAuthorUrl) {
             $html .= Html::a(Html::encode($this->authorName), $safeAuthorUrl, ['target' => '_blank']);
         } else {
@@ -178,7 +179,7 @@ class Webmention extends Element
             $label = preg_replace('/^https?:\/\//', '', $this->source);
         }
 
-        $safeSource = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->source);
+        $safeSource = Plugin::getInstance()->webmentions->safeUrl($this->source);
         if ($safeSource) {
             return Html::a(Html::encode($label), $safeSource, ['target' => '_blank']);
         }
@@ -213,7 +214,7 @@ class Webmention extends Element
         }
 
         $label = preg_replace('/^https?:\/\/.*?\//', '', $this->target);
-        $safeTarget = \matthiasott\webmention\Plugin::getInstance()->webmentions->safeUrl($this->target);
+        $safeTarget = Plugin::getInstance()->webmentions->safeUrl($this->target);
         if ($safeTarget) {
             return Html::a(Html::encode($label), $safeTarget, ['target' => '_blank']);
         }

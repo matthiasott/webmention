@@ -16,6 +16,9 @@ class Settings extends Model
     public bool $useThreadedDisplay = true;
     public array $entryTypes = [];
     public int $failureRetentionDays = 30;
+    public int $failureBackoffThreshold = 5;
+    public int $rateLimitPerHour = 100;
+    public array $trustedSourceHosts = ['brid.gy'];
 
     public function init(): void
     {

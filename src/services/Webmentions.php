@@ -37,6 +37,7 @@ use Mf2;
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
+use yii\db\Expression;
 
 /**
  * Webmention Service
@@ -438,6 +439,113 @@ class Webmentions extends Component
         }
 
         return $url;
+    }
+
+    /**
+     * Returns true if the source URL's host matches an entry in the
+     * `trustedSourceHosts` setting. Match is case-insensitive and covers
+     * subdomains (e.g. `brid.gy` matches `fed.brid.gy` and `bsky.brid.gy`).
+     */
+    public function isTrustedSource(string $source): bool
+    {
+        $trusted = Plugin::getInstance()->settings->trustedSourceHosts;
+        if (empty($trusted)) {
+            return false;
+        }
+
+        $host = parse_url($source, PHP_URL_HOST);
+        if (!$host) {
+            return false;
+        }
+        $host = strtolower($host);
+
+        foreach ($trusted as $trustedHost) {
+            $trustedHost = strtolower(trim((string) $trustedHost));
+            if ($trustedHost === '') {
+                continue;
+            }
+            if ($host === $trustedHost || str_ends_with($host, '.' . $trustedHost)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if the given IP has exceeded the per-hour submission rate
+     * limit. Increments the counter on each call so the limit applies across
+     * accepted, deduped, and rejected submissions alike.
+     *
+     * Submissions whose source host matches `trustedSourceHosts` (e.g. brid.gy)
+     * bypass the limit so legitimate viral traffic isn't dropped. Layer 2
+     * (failure backoff) still applies, so spoofed-trusted sources that fail
+     * validation are bounded.
+     *
+     * Set `rateLimitPerHour` to 0 in plugin settings to disable.
+     */
+    public function isRateLimited(string $ip, string $source): bool
+    {
+        if ($this->isTrustedSource($source)) {
+            return false;
+        }
+
+        $limit = Plugin::getInstance()->settings->rateLimitPerHour;
+        if ($limit <= 0) {
+            return false;
+        }
+
+        $cache = Craft::$app->cache;
+        $key = 'webmention:rl:' . $ip;
+        $count = (int) $cache->get($key);
+
+        if ($count >= $limit) {
+            return true;
+        }
+
+        $cache->set($key, $count + 1, 3600);
+        return false;
+    }
+
+    /**
+     * Returns true if a (source, target) pair has accumulated enough failures
+     * that it should no longer be re-queued. Bumps the existing row's attempt
+     * counter so continued abuse is visible in the failures CP without burning
+     * an outbound HTTP fetch. Stale rows are cleared by CleanupController after
+     * `failureRetentionDays`, giving the pair a fresh shot.
+     *
+     * Set `failureBackoffThreshold` to 0 in plugin settings to disable.
+     */
+    public function isFailureBackedOff(string $source, string $target): bool
+    {
+        $threshold = Plugin::getInstance()->settings->failureBackoffThreshold;
+        if ($threshold <= 0) {
+            return false;
+        }
+
+        $tableName = WebmentionFailure::tableName();
+        $existing = (new Query())
+            ->from($tableName)
+            ->select(['id', 'attempts'])
+            ->where(['source' => $source, 'target' => $target])
+            ->one();
+
+        if (!$existing || (int) $existing['attempts'] < $threshold) {
+            return false;
+        }
+
+        $now = Db::prepareDateForDb(new DateTime());
+        Craft::$app->db->createCommand()->update(
+            $tableName,
+            [
+                'attempts' => new Expression('attempts + 1'),
+                'lastAttemptedAt' => $now,
+                'dateUpdated' => $now,
+            ],
+            ['id' => $existing['id']],
+        )->execute();
+
+        return true;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace matthiasott\webmention\controllers;
 
+use Craft;
 use craft\helpers\Queue;
 use craft\helpers\UrlHelper;
 use craft\web\Controller;
@@ -51,7 +52,7 @@ class WebmentionController extends Controller
         $source = $this->request->getRequiredBodyParam('source');
         $target = $this->request->getRequiredBodyParam('target');
 
-        $webmentions = \matthiasott\webmention\Plugin::getInstance()->webmentions;
+        $webmentions = Plugin::getInstance()->webmentions;
         if (!$webmentions->safeUrl($source) || !$webmentions->safeUrl($target)) {
             return $this->asRaw('Invalid source or target URL')->setStatusCode(400);
         }
@@ -62,13 +63,26 @@ class WebmentionController extends Controller
             return $this->asRaw('Target does not belong to this site')->setStatusCode(400);
         }
 
+        // Per-IP rate limit (cheapest check — cache only). Trusted source
+        // hosts (e.g. brid.gy) bypass the limit so viral spikes aren't dropped.
+        if ($webmentions->isRateLimited($this->request->getUserIP(), $source)) {
+            return $this->asRaw('Rate limit exceeded')->setStatusCode(429);
+        }
+
+        // Short-window dedup: same (source, target) within 5 min.
         $cache = Craft::$app->cache;
         $pairKey = 'webmention:pair:' . hash('sha256', $source . '|' . $target);
-
         if ($cache->get($pairKey)) {
-            // Already accepted this pair recently — don't queue a duplicate.
             return $this->asRaw('')->setStatusCode(202);
         }
+
+        // Failure-aware backoff: pairs that have failed repeatedly are skipped
+        // until cleanup purges them, so attackers can't keep amplifying fetches
+        // against the same target.
+        if ($webmentions->isFailureBackedOff($source, $target)) {
+            return $this->asRaw('')->setStatusCode(202);
+        }
+
         $cache->set($pairKey, true, 300);
 
         Queue::push(new ReceiveWebmention([
