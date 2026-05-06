@@ -1,5 +1,19 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.3.0 – 2026-05-06
+
+### Security
+- Fixed a stored XSS vulnerability in author and entry URLs displayed in the control panel and front-end Webmention templates. The plugin now validates URL schemes (only `http(s):` allowed) at storage and at render time, so `javascript:`, `data:`, and similar URI schemes from a malicious source page can no longer be rendered as clickable links. URLs containing whitespace, userinfo (`user:pass@…`), illegal host characters, or longer than 2048 characters are also rejected. **Sites running prior versions should upgrade.**
+- Added a per-IP rate limit on the public Webmention endpoint (default: 100 submissions/hour, configurable via the new `rateLimitPerHour` setting). High-traffic non-Bridgy senders that previously had no cap will now receive 429 responses past the limit; raise the limit or add the host to `trustedSourceHosts` if needed. Set to 0 to disable.
+- Added a failure-backoff threshold (default: 5, configurable via the new `failureBackoffThreshold` setting). Once a `(source, target)` pair has been recorded as a failure this many times, further submissions for that pair are no longer queued or fetched until the cleanup command purges the record. The failure row's attempt counter still increments so repeated abuse stays visible in the Failed Webmentions view.
+- Submissions for the same `(source, target)` pair received within a 5-minute window are now deduplicated at the controller, so a flood of identical submissions cannot amplify outbound HTTP fetches.
+
+### Added
+- Added a `trustedSourceHosts` setting (default: `['brid.gy']`) that lets configured source hosts bypass the per-IP rate limit, so viral traffic routed through Bridgy isn't dropped during a spike. Subdomain matches are included automatically, so the default covers `fed.brid.gy` and `bsky.brid.gy`.
+
+### Fixed
+- Stopped HTML-encoding URL field values during parsing. URL escaping is now handled at the rendering layer, so stored URLs no longer have `&` characters corrupted to `&amp;`.
+
 ## 1.2.0 – 2026-03-22
 
 ### Added
