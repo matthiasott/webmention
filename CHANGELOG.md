@@ -1,5 +1,11 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.3.1 – 2026-05-08
+
+### Fixed
+- Fixed "Unable to parse URI: at://" failures when processing Bluesky webmentions routed through Bridgy. Bridgy's Bluesky comment pages contain `at://` ATProto URIs in their `<a href>` elements, which crash Guzzle's URL parser. The link iteration in `validateWebmention()` now pre-filters non-http(s) hrefs and is wrapped in a try/catch, so a single unparseable link no longer kills the whole validation loop. Affected failure rows clear on retry.
+- Fixed Bluesky reply threading. mf2 `in-reply-to` values pointing at `at://did:.../app.bsky.feed.post/{rkey}` are now converted to their canonical `https://bsky.app/profile/{did}/post/{rkey}` form so they can be matched against existing webmentions' `hEntryUrl`. Replies to other Bluesky posts now nest correctly under their parent in threaded display.
+
 ## 1.3.0 – 2026-05-06
 
 ### Security
