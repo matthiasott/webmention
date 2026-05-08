@@ -253,8 +253,25 @@ class Webmentions extends Component
 
         foreach ($xpath->query('//a[@href]') as $link) {
             /** @var DOMElement $link */
-            $linkUrl = $link->getAttribute('href');
-            $resolvedUrl = $this->resolveUrl($linkUrl, $src);
+            $linkUrl = trim($link->getAttribute('href'));
+            if ($linkUrl === '') {
+                continue;
+            }
+
+            // Skip non-http(s) hrefs (e.g. at://, mailto:, tel:, javascript:).
+            // Guzzle's Uri parser throws on at:// URIs from Bridgy's Bluesky
+            // pages because PHP's parse_url mis-handles the did:plc: authority,
+            // which would kill the whole link loop.
+            $scheme = strtolower((string) parse_url($linkUrl, PHP_URL_SCHEME));
+            if ($scheme !== '' && $scheme !== 'http' && $scheme !== 'https') {
+                continue;
+            }
+
+            try {
+                $resolvedUrl = $this->resolveUrl($linkUrl, $src);
+            } catch (\Throwable $e) {
+                continue;
+            }
 
             if ($this->normalizeUrl($resolvedUrl) === $normalizedTarget) {
                 return $html;
@@ -290,7 +307,11 @@ class Webmentions extends Component
 
             if ($head->hasHeader('Location')) {
                 $redirect = $head->getHeader('Location')[0];
-                $resolvedRedirect = $this->resolveUrl($redirect, $linkUrl);
+                try {
+                    $resolvedRedirect = $this->resolveUrl($redirect, $linkUrl);
+                } catch (\Throwable $e) {
+                    continue;
+                }
                 if ($this->normalizeUrl($resolvedRedirect) === $normalizedTarget) {
                     return $html;
                 }
@@ -1331,13 +1352,40 @@ class Webmentions extends Component
     {
         $urls = [];
         foreach ($inReplyTo as $item) {
-            if (is_string($item)) {
-                $urls[] = $item;
-            } elseif (is_array($item) && isset($item['value'])) {
-                $urls[] = $item['value'];
+            $value = is_string($item)
+                ? $item
+                : (isset($item['value']) && is_string($item['value']) ? $item['value'] : null);
+
+            if ($value === null) {
+                continue;
+            }
+
+            if (str_starts_with($value, 'at://')) {
+                $converted = $this->atUriToBlueskyUrl($value);
+                if ($converted) {
+                    $urls[] = $converted;
+                }
+                continue;
+            }
+
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+                $urls[] = $value;
             }
         }
         return $urls;
+    }
+
+    /**
+     * Converts an ATProto `at://` URI for a Bluesky post into its public
+     * `bsky.app` HTTPS URL. Returns null for anything that isn't a feed post,
+     * which is correct — non-post records can't be parents in a reply thread.
+     */
+    private function atUriToBlueskyUrl(string $atUri): ?string
+    {
+        if (!preg_match('#^at://(did:[^/]+)/app\.bsky\.feed\.post/([^/]+)$#', $atUri, $matches)) {
+            return null;
+        }
+        return 'https://bsky.app/profile/' . $matches[1] . '/post/' . $matches[2];
     }
 
     /**
