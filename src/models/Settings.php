@@ -46,6 +46,18 @@ class Settings extends Model
             }
             $values['avatarVolume'] = $volume?->uid;
         }
+
+        if (isset($values['trustedSourceHostsRaw'])) {
+            $hosts = preg_split('/[\r\n]+/', (string) $values['trustedSourceHostsRaw']);
+            $hosts = array_map(function ($line) {
+                $line = trim($line);
+                // Tolerate users pasting a full URL — keep just the host.
+                return parse_url($line, PHP_URL_HOST) ?? $line;
+            }, $hosts);
+            $values['trustedSourceHosts'] = array_values(array_filter($hosts));
+            unset($values['trustedSourceHostsRaw']);
+        }
+
         parent::setAttributes($values, $safeOnly);
     }
 }

@@ -81,6 +81,38 @@
   on: settings.useThreadedDisplay,
 }) }}
 
+{{ forms.textField({
+  label: 'Rate Limit per Hour',
+  instructions: 'Maximum Webmention submissions accepted per remote IP per hour. Senders exceeding the limit receive a 429 response. Set to 0 to disable.',
+  id: 'rateLimitPerHour',
+  name: 'rateLimitPerHour',
+  value: settings.rateLimitPerHour,
+  type: 'number',
+  min: 0,
+  size: 5,
+}) }}
+
+{{ forms.textareaField({
+  label: 'Trusted Source Hosts',
+  instructions: 'Source hostnames that bypass the per-IP rate limit. One hostname per line. Subdomains are matched automatically (e.g. <code>brid.gy</code> covers <code>fed.brid.gy</code> and <code>bsky.brid.gy</code>).',
+  id: 'trustedSourceHostsRaw',
+  name: 'trustedSourceHostsRaw',
+  value: settings.trustedSourceHosts|join("\n"),
+  rows: 4,
+  class: 'ltr code',
+}) }}
+
+{{ forms.textField({
+  label: 'Failure Backoff Threshold',
+  instructions: 'After a (source, target) pair has been recorded as a failure this many times, further submissions for that pair are no longer queued or fetched. Set to 0 to disable.',
+  id: 'failureBackoffThreshold',
+  name: 'failureBackoffThreshold',
+  value: settings.failureBackoffThreshold,
+  type: 'number',
+  min: 0,
+  size: 5,
+}) }}
+
 {% if hasVolumes %}
   {% set volumeOptions = craft.cp.getVolumeOptions() %}
   {%  if not avatarVolume %}
