@@ -1,5 +1,10 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.4.2 – 2026-05-13
+
+### Fixed
+- Broadened the `enshrined/svg-sanitize` Composer constraint even more to `>=0.19,<1.0` to track Craft's own version bumps (Craft 5.6 pinned `~0.19.0`, Craft 5.9 pinned `~0.22.0`). The plugin's usage of the Sanitizer API is stable across all 0.x releases, so the wider range introduces no functional changes — only avoids future "satisfiable but conflicts with another require" install errors when Craft moves its constraint forward.
+
 ## 1.4.1 – 2026-05-13
 
 ### Fixed
