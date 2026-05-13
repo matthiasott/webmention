@@ -58,10 +58,15 @@ class m260511_000000_webmentions_unique_index extends Migration
                         ->execute();
                 }
 
-                // Delete duplicate rows via the elements table so the cascade cleans up
-                // webmentions, elements_sites, searchindex, and any other element-related
-                // tables in one shot. Deleting directly from the webmentions table would
-                // leave orphaned rows in elements (the FK cascade only flows elements → webmentions).
+                // Delete duplicate rows in the correct order: first the webmention data
+                // rows (FK from craft_webmentions.id → craft_elements.id is RESTRICT in
+                // practice, so the child must go before the parent), then the element
+                // rows. The elements delete then cascades down to elements_sites,
+                // searchindex, and any other element-related tables via their own FKs.
+                Craft::$app->db->createCommand()
+                    ->delete($tableName, ['id' => $deleteIds])
+                    ->execute();
+
                 Craft::$app->db->createCommand()
                     ->delete(Table::ELEMENTS, ['id' => $deleteIds])
                     ->execute();
