@@ -1,5 +1,21 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.4.0 - 2026-05-13
+
+### Security
+- **Critical**: Added `safeOutboundRequest()` helper enforcing per-hop SSRF protection on all outbound Guzzle requests. Source fetches and avatar downloads now validate resolved IP addresses against private/reserved ranges.
+- **Critical**: Response-body size caps of 5 MB for source HTML and avatars enforced via streaming `on_headers` guard and byte-counting sink, preventing memory exhaustion from oversized responses.
+- **High**: SVG avatars are now sanitized via `enshrined/svg-sanitize` before being written to the asset volume, removing `<script>`, event handlers, and `<foreignObject>`.
+- **High**: Avatar file extension is now derived from `Content-Type` header first, with URL path as fallback, and validated against an allowlist (`jpg`, `jpeg`, `png`, `gif`, `webp`, `svg`). Files with unrecognised MIME types or disallowed extensions are refused.
+- **High**: Replaced catastrophic-backtracking regexes in `Sender::_findEndpointInBody()` and `Sender::_findEndpointInHeaders()` with DOMDocument/XPath and structured Link-header parsing, eliminating ReDoS risk on attacker-controlled page bodies and headers. Body-parsed `rel` values are now compared case-insensitively, matching the existing header behavior and the HTML living standard.
+- **Medium**: Hardened the URL-extraction regex in `extractTargets()` against ReDoS. The `%` character was removed from the path bare character class so percent-encoded sequences (`%XY`) have exactly one valid parsing instead of two, eliminating the exponential-backtracking root cause. The regex's existing recognition of markdown-link URLs with embedded parens (Wikipedia's `_(physicist)` style), `ftp://` URLs, trailing slashes, and percent-encoded paths is preserved unchanged.
+- **Medium**: Added a unique database index on `(source, target, targetId, targetSiteId)` in the `webmentions` table to prevent duplicate rows from concurrent queue workers. A migration deduplicates existing rows (keeping the most recently processed record, with preference for rows containing thread reply links). An `IntegrityException` guard in the queue job handles any remaining races gracefully.
+- **Low**: Server filesystem paths are now redacted from `errorTrace` before storage in the database. Stored traces use `[plugin]` and `[craft]` placeholders instead of absolute paths visible to anyone with DB access.
+
+### Added
+
+- The `trustedSourceHosts` setting now also exempts matching sources from the private/reserved-IP check (in addition to the rate limit). This lets self-hosted senders on internal networks, e.g. homelab Mastodon, intranet Micropub servers, deliver Webmentions to public Craft sites without disabling the SSRF guard for everyone. Trust remains opt-in and admin-controlled; unlisted sources are still validated as before.
+
 ## 1.3.1 – 2026-05-08
 
 ### Fixed

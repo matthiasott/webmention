@@ -82,22 +82,24 @@ class Sender extends Component
     private function _findEndpointInBody(string $url): ?string
     {
         $response = $this->client->get($url);
-        $body = preg_replace('/<!--(?:.|\s)*?-->/', '', (string)$response->getBody());
+        $body = (string) $response->getBody();
 
-        // Matches anchor and link tags if it contains href and webmention rel-attribute.
-        // Test it here: http://regexr.com/3evjk
-        $pattern = '~(<(?:link|a)(?=[^>]*href)(?:[^>]*\s+|\s*)rel="(?:[^>]*\s+|\s*)(?:webmention|http:\/\/webmention.org\/?)(?:\s*|\s+[^>]*)"[^>]*>)~i';
+        $doc = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $body = mb_convert_encoding($body, 'HTML-ENTITIES', mb_detect_encoding($body));
+        @$doc->loadHTML($body, LIBXML_NOWARNING | LIBXML_NOERROR);
+        libxml_clear_errors();
+        $xpath = new \DOMXPath($doc);
 
-        if (!preg_match($pattern, $body, $matches)) {
-            return null;
-        }
-
-        if (preg_match('/href=""/i', $matches[1])) {
-            return $url;
-        }
-
-        if (preg_match('/href="([^"]+)"/i', $matches[1], $matches)) {
-            return $matches[1];
+        foreach ($xpath->query('//link[@href]|//a[@href]') as $node) {
+            /** @var \DOMElement $node */
+            // rel token matching is ASCII case-insensitive per the HTML living standard,
+            // so lowercase the value before splitting and comparing.
+            $rels = preg_split('/\s+/', strtolower(trim($node->getAttribute('rel'))), -1, PREG_SPLIT_NO_EMPTY);
+            if (in_array('webmention', $rels, true) || in_array('http://webmention.org/', $rels, true)) {
+                $href = trim($node->getAttribute('href'));
+                return $href === '' ? $url : $href;
+            }
         }
 
         return null;
@@ -107,14 +109,24 @@ class Sender extends Component
     {
         $response = $this->client->head($url);
 
-        foreach ($response->getHeaders() as $name => $values) {
-            if (strcasecmp($name, 'Link') === 0) {
-                $pattern = '~<((?:https?:\/\/)?[^>]+)>; rel="?(?:[^>]*\s+|\s*)(?:webmention|http:\/\/webmention.org\/?)(?:\s*|\s+[^>]*)"?~i';
-
-                foreach ($values as $link) {
-                    if (preg_match($pattern, $link, $matches)) {
-                        return $matches[1];
+        foreach ($response->getHeader('Link') as $headerValue) {
+            // Multiple link-values may be comma-separated in a single header line
+            foreach (explode(',', $headerValue) as $linkValue) {
+                $parts = explode(';', $linkValue);
+                $uriRef = trim(trim($parts[0]), '<>');
+                $rels = [];
+                for ($i = 1; $i < count($parts); $i++) {
+                    $param = trim($parts[$i]);
+                    if (stripos($param, 'rel=') === 0) {
+                        $relVal = trim(substr($param, 4), '"\'');
+                        // rel can contain multiple space-separated values
+                        foreach (preg_split('/\s+/', $relVal) as $r) {
+                            $rels[] = strtolower(trim($r));
+                        }
                     }
+                }
+                if (in_array('webmention', $rels, true) || in_array('http://webmention.org/', $rels, true)) {
+                    return $uriRef === '' ? $url : $this->_relativeToAbsoluteUrl($uriRef, $url);
                 }
             }
         }

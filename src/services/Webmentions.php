@@ -4,16 +4,16 @@ namespace matthiasott\webmention\services;
 
 use Craft;
 use craft\base\ElementInterface;
+use craft\db\Query;
 use craft\elements\Asset;
 use craft\elements\Entry;
 use craft\events\ModelEvent;
 use craft\helpers\App;
+use craft\helpers\Db;
 use craft\helpers\FileHelper;
 use craft\helpers\Html;
 use craft\helpers\HtmlPurifier;
 use craft\helpers\Image;
-use craft\db\Query;
-use craft\helpers\Db;
 use craft\helpers\Queue;
 use craft\helpers\StringHelper;
 use craft\models\Site;
@@ -25,14 +25,15 @@ use DOMXPath;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Collection;
 use LitEmoji\LitEmoji;
 use matthiasott\webmention\elements\Webmention;
 use matthiasott\webmention\fields\WebmentionSwitch;
-use matthiasott\webmention\records\WebmentionFailure;
 use matthiasott\webmention\jobs\SendWebmention;
 use matthiasott\webmention\Plugin;
+use matthiasott\webmention\records\WebmentionFailure;
 use Mf2;
 use yii\base\Component;
 use yii\base\Exception;
@@ -219,25 +220,27 @@ class Webmentions extends Component
             return false;
         }
 
-        // Check if source URL is resolvable
-        if (!$this->isResolvableUrl($src)) {
+        // Sources whose host matches `trustedSourceHosts` bypass the private/reserved IP
+        // checks below — this enables self-hosted senders on private networks (homelab
+        // Mastodon, intranet Micropub, etc.) to deliver webmentions when their hostname
+        // is explicitly listed in plugin settings. Trust is opt-in and admin-controlled.
+        $isTrusted = $this->isTrustedSource($src);
+
+        // Check if source URL is resolvable (skipped for trusted hosts)
+        if (!$isTrusted && !$this->isResolvableUrl($src)) {
             Craft::warning("Skipping webmention from unresolvable domain: $src", 'webmention');
             return false;
         }
 
         // Get HTML content
-        $client = Craft::createGuzzleClient();
         try {
             Craft::info('Fetching source URL: ' . $src, 'webmention');
-            $response = $client->get($src, [
-                RequestOptions::CONNECT_TIMEOUT => 10,
-                RequestOptions::TIMEOUT => 30,
-            ]);
-        } catch (GuzzleException $e) {
+            $response = $this->safeOutboundRequest('GET', $src, \matthiasott\webmention\models\Settings::MAX_SOURCE_BODY_SIZE, $isTrusted);
+            $html = (string) $response->getBody();
+        } catch (\Throwable $e) {
             Craft::warning(sprintf('Failed to fetch source URL "%s": %s', $src, $e->getMessage()), 'webmention');
             return false;
         }
-        $html = (string) $response->getBody();
         Craft::info('Fetched HTML, length: ' . strlen($html), 'webmention');
 
         // and go find a backlink
@@ -280,6 +283,7 @@ class Webmentions extends Component
         }
 
         // Only check for redirects if we haven't found a direct match, and limit the number of HEAD requests
+        $client = Craft::createGuzzleClient();
         $redirectCheckCount = 0;
         $maxRedirectChecks = 10;
 
@@ -291,6 +295,12 @@ class Webmentions extends Component
             // Skip common social media and other high-link-count domains to save time
             $host = parse_url($linkUrl, PHP_URL_HOST);
             if ($host && preg_match('/(facebook|twitter|instagram|linkedin|github)\.com$/', $host)) {
+                continue;
+            }
+
+            // Skip URLs resolving to private/reserved IPs (SSRF protection), unless the
+            // source host is trusted — trust extends to links discovered on the source page.
+            if (!$isTrusted && !$this->isResolvableUrl($linkUrl)) {
                 continue;
             }
 
@@ -328,7 +338,7 @@ class Webmentions extends Component
      * @param string $url
      * @return bool
      */
-    private function isResolvableUrl(string $url): bool
+    protected function isResolvableUrl(string $url): bool
     {
         $host = parse_url($url, PHP_URL_HOST);
         if (!$host) {
@@ -348,9 +358,127 @@ class Webmentions extends Component
             return false;
         }
 
-        // Quick DNS check (with timeout)
-        $records = @dns_get_record($host, DNS_A);
-        return !empty($records);
+        // Query both A and AAAA records
+        $aRecords = @dns_get_record($host, DNS_A) ?: [];
+        $aaaaRecords = @dns_get_record($host, DNS_AAAA) ?: [];
+        $allRecords = array_merge($aRecords, $aaaaRecords);
+
+        if (empty($allRecords)) {
+            return false;
+        }
+
+        // Validate each resolved IP against private/reserved ranges
+        foreach ($allRecords as $record) {
+            $ip = $record['ip'] ?? $record['ipv6'] ?? null;
+            if (!$ip) {
+                continue;
+            }
+
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                \Craft::warning("Refusing URL {$url}: resolved IP {$ip} is in private/reserved range");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Creates a Guzzle HTTP client with the given configuration.
+     *
+     * This is a test seam that can be overridden in integration tests
+     * to inject mock clients or custom middleware.
+     *
+     * @param array $config
+     * @return \GuzzleHttp\Client
+     */
+    protected function createHttpClient(array $config = []): \GuzzleHttp\Client
+    {
+        return Craft::createGuzzleClient($config);
+    }
+
+    /**
+     * Performs a safe outbound HTTP request with pre-flight host validation,
+     * redirect control, and optional response body size enforcement.
+     *
+     * @param string $method The HTTP method ('GET' or 'HEAD')
+     * @param string $url The request URL
+     * @param int $maxBodyBytes Max response body bytes (0 = no limit)
+     * @param bool $trusted If true, skip the private/reserved-IP check on both the
+     *                      pre-flight host and each redirect hop. Reserved for callers
+     *                      that have already verified the source via `isTrustedSource()`.
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \RuntimeException If the host is non-resolvable (and not trusted), a redirect
+     *                          targets a private/reserved IP (and not trusted), or the
+     *                          response body exceeds $maxBodyBytes.
+     */
+    protected function safeOutboundRequest(
+        string $method,
+        string $url,
+        int $maxBodyBytes = 0,
+        bool $trusted = false,
+    ): \Psr\Http\Message\ResponseInterface {
+        // Pre-flight host check (skipped when the caller has marked this source trusted)
+        if (!$trusted && !$this->isResolvableUrl($url)) {
+            throw new \RuntimeException("Refusing to fetch non-resolvable host: {$url}");
+        }
+
+        $options = [
+            RequestOptions::CONNECT_TIMEOUT => 10,
+            RequestOptions::TIMEOUT => 30,
+        ];
+
+        // Redirect handling
+        if ($method === 'GET') {
+            $options[RequestOptions::ALLOW_REDIRECTS] = [
+                'max' => 5,
+                'on_redirect' => function($request, $response, $uri) use ($trusted) {
+                    if (!$trusted && !$this->isResolvableUrl((string) $uri)) {
+                        throw new \RuntimeException("Redirect target is in private/reserved range: {$uri}");
+                    }
+                },
+            ];
+        } else {
+            $options[RequestOptions::ALLOW_REDIRECTS] = false;
+        }
+
+        // Body size enforcement (only for GET with maxBodyBytes > 0)
+        if ($maxBodyBytes > 0) {
+            $options[RequestOptions::ON_HEADERS] = function(\Psr\Http\Message\ResponseInterface $response) use ($maxBodyBytes) {
+                $contentLength = (int) $response->getHeaderLine('Content-Length');
+                if ($contentLength > 0 && $contentLength > $maxBodyBytes) {
+                    throw new \RuntimeException("Response Content-Length {$contentLength} exceeds {$maxBodyBytes} byte limit");
+                }
+            };
+            $options[RequestOptions::STREAM] = true;
+        }
+
+        $client = $this->createHttpClient($options);
+
+        if ($method === 'GET') {
+            $response = $client->get($url);
+        } else {
+            $response = $client->head($url);
+        }
+
+        // Byte-counting sink for streamed responses
+        if ($maxBodyBytes > 0 && $response->getBody()->isReadable()) {
+            $body = $response->getBody();
+            $accumulated = '';
+            $count = 0;
+            while (!$body->eof()) {
+                $chunk = $body->read(8192);
+                $count += strlen($chunk);
+                if ($count > $maxBodyBytes) {
+                    throw new \RuntimeException("Response body exceeded {$maxBodyBytes} byte limit after streaming {$count} bytes");
+                }
+                $accumulated .= $chunk;
+            }
+            // Replace body with accumulated string for downstream consumers
+            $response = $response->withBody(Utils::streamFor($accumulated));
+        }
+
+        return $response;
     }
 
     /**
@@ -765,9 +893,11 @@ class Webmentions extends Component
         }
 
         // Author photo should be saved locally to avoid exploits.
-        // If an author photo is available get the image and save it to assets
+        // If an author photo is available get the image and save it to assets.
+        // Trust extends to avatar URLs so self-hosted senders on private networks
+        // (whose avatar lives at the same private host as the source) still work.
         if ($authorPhotoUrl) {
-            $asset = $this->saveAsset($authorPhotoUrl, $authorPhotoAlt);
+            $asset = $this->saveAsset($authorPhotoUrl, $authorPhotoAlt, $this->isTrustedSource($source));
             if ($asset) {
                 $result['author']['avatarId'] = $asset->id;
             }
@@ -841,7 +971,57 @@ class Webmentions extends Component
      * @param string|null $alt Optional alt text for the asset
      * @return Asset|null The saved or existing asset, or null on failure
      */
-    private function saveAsset(string $url, ?string $alt = null): ?Asset
+    /**
+     * Resolves avatar file extension using MIME-first detection with allowlist validation.
+     *
+     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response
+     * @param string $url The avatar URL
+     * @param string $body The response body
+     * @return string|null The resolved extension (lowercase) or null if rejected
+     */
+    protected function resolveAvatarExtension(\Psr\Http\Message\ResponseInterface $response, string $url, string $body): ?string
+    {
+        $allowlist = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'heic', 'heif'];
+
+        // 1. Check Content-Type header first
+        $contentType = $response->getHeaderLine('Content-Type');
+        if ($contentType && str_starts_with($contentType, 'image/')) {
+            $ext = FileHelper::getExtensionByMimeType($contentType);
+            if ($ext && in_array(strtolower($ext), $allowlist, true)) {
+                return strtolower($ext);
+            }
+        }
+
+        // 2. Fallback to URL path extension
+        $urlPath = parse_url($url, PHP_URL_PATH) ?: $url;
+        $urlExt = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+        if ($urlExt && in_array($urlExt, $allowlist, true)) {
+            return $urlExt;
+        }
+
+        // 3. Final fallback: sniff body bytes with finfo
+        if (!empty($body)) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($body);
+            if ($mimeType && str_starts_with($mimeType, 'image/')) {
+                $ext = FileHelper::getExtensionByMimeType($mimeType);
+                if ($ext && in_array(strtolower($ext), $allowlist, true)) {
+                    return strtolower($ext);
+                }
+            }
+        }
+
+        // 4. If we have a non-image content type, reject
+        if ($contentType && !str_starts_with($contentType, 'image/')) {
+            Craft::warning("Avatar content type '{$contentType}' is not an image for {$url}", __METHOD__);
+            return null;
+        }
+
+        // 5. Default to jpg if nothing else worked
+        return 'jpg';
+    }
+
+    private function saveAsset(string $url, ?string $alt = null, bool $trusted = false): ?Asset
     {
         $folder = $this->getAvatarFolder();
         if (!$folder) {
@@ -850,13 +1030,9 @@ class Webmentions extends Component
 
         $hashedFileName = sha1($url);
 
-        $client = Craft::createGuzzleClient();
         try {
-            $response = $client->get($url, [
-                RequestOptions::CONNECT_TIMEOUT => 10,
-                RequestOptions::TIMEOUT => 30,
-            ]);
-        } catch (GuzzleException $e) {
+            $response = $this->safeOutboundRequest('GET', $url, \matthiasott\webmention\models\Settings::MAX_AVATAR_BODY_SIZE, $trusted);
+        } catch (\Throwable $e) {
             Craft::warning("Avatar download failed for {$url}: {$e->getMessage()}", __METHOD__);
             return null;
         }
@@ -874,27 +1050,10 @@ class Webmentions extends Component
             return null;
         }
 
-        // Strip query strings before extracting extension
-        $fileExtension = pathinfo(
-            parse_url($url, PHP_URL_PATH) ?: $url,
-            PATHINFO_EXTENSION
-        );
-
-        if (empty($fileExtension)) {
-            $mimeType = $response->getHeaderLine('Content-Type');
-            if ($mimeType && str_starts_with($mimeType, 'image/')) {
-                $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
-            }
-            if (empty($fileExtension)) {
-                $finfo = new \finfo(FILEINFO_MIME_TYPE);
-                $mimeType = $finfo->buffer($body);
-                if ($mimeType && str_starts_with($mimeType, 'image/')) {
-                    $fileExtension = FileHelper::getExtensionByMimeType($mimeType);
-                }
-            }
-            if (empty($fileExtension)) {
-                $fileExtension = 'jpg';
-            }
+        $fileExtension = $this->resolveAvatarExtension($response, $url, $body);
+        if ($fileExtension === null) {
+            Craft::warning("Avatar extension not in allowlist for {$url}", __METHOD__);
+            return null;
         }
 
         $fileName = $hashedFileName . '.' . $fileExtension;
@@ -916,6 +1075,19 @@ class Webmentions extends Component
             uniqid($hashedFileName . '_', true) . '.' . $fileExtension
         );
         FileHelper::writeToFile($tempPath, $body);
+
+        // Sanitize SVG files before saving to the asset volume
+        if ($fileExtension === 'svg') {
+            $sanitizer = new \enshrined\svgSanitize\Sanitizer();
+            $rawSvg = file_get_contents($tempPath);
+            $cleanSvg = $sanitizer->sanitize($rawSvg);
+            if ($cleanSvg === false || $cleanSvg === '') {
+                Craft::warning("SVG sanitization failed or produced empty output for {$url}", __METHOD__);
+                @unlink($tempPath);
+                return null;
+            }
+            file_put_contents($tempPath, $cleanSvg);
+        }
 
         $ext = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
         if (Image::canManipulateAsImage($ext) && $ext !== 'svg') {
@@ -1205,8 +1377,13 @@ class Webmentions extends Component
     private function extractTargets(mixed $value, array &$targets): void
     {
         if (is_string($value)) {
-            // https://regex101.com/r/p2nCxk/1
-            preg_match_all("/(?<=\]\()(?:https?|ftp):\/\/(?:(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+(?::(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})*)?@)?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+\.)+(?:[a-zA-Z]{2,}))(?::\d{1,5})?(?:(?:[\/?#](?:[a-zA-Z0-9$\-_.+!*\'(),;\/?:@&=#%]|%[0-9a-fA-F]{2})+)(?=(?<!\()\)))|(?:https?|ftp):\/\/(?:(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+(?::(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})*)?@)?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+\.)+(?:[a-zA-Z]{2,}))(?::\d{1,5})?(?:(?:[\/?#](?:[a-zA-Z0-9$\-_.+!*\'(),;\/?:@&=#%]|%[0-9a-fA-F]{2})*))/uix", $value, $urls);
+            // ReDoS-hardened version of https://regex101.com/r/p2nCxk/1. Now: https://regex101.com/r/ld9Xd7/1
+            // `%` is removed from the path bare character class so `%XY` is unambiguous
+            // (it must match the `%[0-9a-fA-F]{2}` alternative — bare `%` in URL paths
+            // is invalid per RFC 3986 anyway). This kills the exponential-parsing root
+            // cause without touching the markdown-link balancing on Branch A, which
+            // depends on standard greedy backtracking against the trailing lookahead.
+            preg_match_all("/(?<=\]\()(?:https?|ftp):\/\/(?:(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+(?::(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})*)?@)?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+\.)+(?:[a-zA-Z]{2,}))(?::\d{1,5})?(?:(?:[\/?#](?:[a-zA-Z0-9$\-_.+!*\'(),;\/?:@&=#]|%[0-9a-fA-F]{2})+)(?=(?<!\()\)))|(?:https?|ftp):\/\/(?:(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+(?::(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})*)?@)?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-zA-Z0-9$\-_.+!*\'(),]|%[0-9a-fA-F]{2})+\.)+(?:[a-zA-Z]{2,}))(?::\d{1,5})?(?:(?:[\/?#](?:[a-zA-Z0-9$\-_.+!*\'(),;\/?:@&=#]|%[0-9a-fA-F]{2})*))/uix", $value, $urls);
 
             $urls = array_unique(array_map('html_entity_decode', $urls[0]));
 
@@ -1442,10 +1619,25 @@ class Webmentions extends Component
             ->where(['source' => $source, 'target' => $target])
             ->one();
 
+        // Redact server paths from trace and message before storing
+        $trace = mb_substr($e->getTraceAsString(), 0, 65535);
+        $trace = str_replace(
+            [Craft::getAlias('@root'), dirname(__DIR__, 2)],
+            ['[craft]', '[plugin]'],
+            $trace
+        );
+
+        $message = mb_substr($e->getMessage(), 0, 65535);
+        $message = str_replace(
+            [Craft::getAlias('@root'), dirname(__DIR__, 2)],
+            ['[craft]', '[plugin]'],
+            $message
+        );
+
         if ($existing) {
             Craft::$app->db->createCommand()->update($tableName, [
-                'errorMessage' => mb_substr($e->getMessage(), 0, 65535),
-                'errorTrace' => mb_substr($e->getTraceAsString(), 0, 65535),
+                'errorMessage' => $message,
+                'errorTrace' => $trace,
                 'attempts' => $existing['attempts'] + 1,
                 'lastAttemptedAt' => $now,
                 'dateUpdated' => $now,
@@ -1454,8 +1646,8 @@ class Webmentions extends Component
             Craft::$app->db->createCommand()->insert($tableName, [
                 'source' => $source,
                 'target' => $target,
-                'errorMessage' => mb_substr($e->getMessage(), 0, 65535),
-                'errorTrace' => mb_substr($e->getTraceAsString(), 0, 65535),
+                'errorMessage' => $message,
+                'errorTrace' => $trace,
                 'attempts' => 1,
                 'lastAttemptedAt' => $now,
                 'dateCreated' => $now,

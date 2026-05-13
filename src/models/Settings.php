@@ -20,6 +20,18 @@ class Settings extends Model
     public int $rateLimitPerHour = 100;
     public array $trustedSourceHosts = ['brid.gy'];
 
+    /**
+     * Maximum allowed size for source document body (in bytes).
+     * Acts as a streaming size cap before memory allocation during fetch.
+     */
+    public const MAX_SOURCE_BODY_SIZE = 5242880; // 5 MB
+
+    /**
+     * Maximum allowed size for avatar image body (in bytes).
+     * Acts as a streaming size cap before memory allocation during download.
+     */
+    public const MAX_AVATAR_BODY_SIZE = 5242880; // 5 MB
+
     public function init(): void
     {
         parent::init();
@@ -49,7 +61,7 @@ class Settings extends Model
 
         if (isset($values['trustedSourceHostsRaw'])) {
             $hosts = preg_split('/[\r\n]+/', (string) $values['trustedSourceHostsRaw']);
-            $hosts = array_map(function ($line) {
+            $hosts = array_map(function($line) {
                 $line = trim($line);
                 // Tolerate users pasting a full URL — keep just the host.
                 return parse_url($line, PHP_URL_HOST) ?? $line;

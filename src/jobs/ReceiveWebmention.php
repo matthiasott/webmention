@@ -42,12 +42,36 @@ class ReceiveWebmention extends BaseJob
                 ));
             }
 
-            if (!Craft::$app->getElements()->saveElement($webmention)) {
-                throw new \RuntimeException(sprintf(
-                    'Failed to save webmention element from source "%s": %s',
-                    $this->source,
-                    implode(', ', $webmention->getFirstErrors())
-                ));
+            try {
+                if (!Craft::$app->getElements()->saveElement($webmention)) {
+                    throw new \RuntimeException(sprintf(
+                        'Failed to save webmention element from source "%s": %s',
+                        $this->source,
+                        implode(', ', $webmention->getFirstErrors())
+                    ));
+                }
+            } catch (\yii\db\IntegrityException $e) {
+                // Race condition: another concurrent job inserted the same (source, target) first.
+                // Re-query the existing row, copy our freshly-parsed attributes onto it, and save —
+                // so the latest parse wins, matching the no-race "update existing" path in parseWebmention().
+                $existing = \matthiasott\webmention\elements\Webmention::find()
+                    ->source($webmention->source)
+                    ->target($webmention->target)
+                    ->one();
+                if ($existing === null) {
+                    throw new \RuntimeException('IntegrityException but no existing webmention found', 0, $e);
+                }
+                foreach ([
+                    'authorName', 'avatarId', 'authorUrl', 'published', 'name', 'text',
+                    'targetId', 'targetSiteId', 'hEntryUrl', 'host', 'type', 'rsvp',
+                    'properties', 'parentId',
+                ] as $attr) {
+                    $existing->$attr = $webmention->$attr;
+                }
+                Craft::$app->getElements()->saveElement($existing);
+                Craft::info("Resolved race condition for ({$webmention->source}, {$webmention->target}) — updated existing id={$existing->id}", __CLASS__);
+                // Hand off the persisted element so resolveChildWebmentions below uses the correct id.
+                $webmention = $existing;
             }
 
             // Success — clear any prior failure record for this source+target
