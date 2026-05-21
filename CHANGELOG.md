@@ -1,5 +1,14 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.4.3 – 2026-05-21
+
+### Fixed
+- Fixed Bluesky reply threading regression introduced in 1.3.1. Bridgy stores Bluesky webmentions' `hEntryUrl` in either DID form (`/profile/did:plc:.../post/{rkey}`) or handle form (`/profile/{handle}/post/{rkey}`), but the `at://` → `bsky.app` conversion in `extractInReplyToUrls()` always emits the DID form. Parent-lookup did an exact-string match on `hEntryUrl`, so replies whose parent was stored in handle form fell back to top-level. Resolution now falls back to matching by the post's `rkey` (a globally-unique TID), mirroring the existing Mastodon `/web/statuses/{id}` ↔ `/@user/{id}` fallback. Both directions (`resolveParentWebmention()` and `resolveChildWebmentions()`) handle the variation.
+
+### Added
+- Added a backfill migration (`m260521_000000_backfill_parent_ids_bluesky`) that re-resolves `parentId` for existing webmentions with the new rkey matching. The migration only touches rows that still have `parentId = NULL`, so prior backfills are preserved. As a side effect, it also picks up any Mastodon stragglers received after the 1.1.0 backfill ran.
+- Added a `webmention/backfill/bluesky` console command with a `--dry-run` flag so the backfill can be previewed before applying. Useful for verifying matches against production data without writing anything.
+
 ## 1.4.2 – 2026-05-13
 
 ### Fixed
