@@ -384,6 +384,24 @@ JS, [
     /**
      * @inheritdoc
      */
+    public function afterDelete(): void
+    {
+        parent::afterDelete();
+
+        // Invalidate the target element's caches so that eager-loaded webmention
+        // counts (e.g. getTotalWebmentions()) reflect the deletion immediately,
+        // mirroring the same invalidation that already happens in afterSave().
+        $element = $this->getTargetElement();
+        if ($element) {
+            Craft::$app->onAfterRequest(function() use ($element) {
+                Craft::$app->getElements()->invalidateCachesForElement($element);
+            });
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
     public static function eagerLoadingMap(array $sourceElements, string $handle): array|null|false
     {
         if ($handle === 'avatar') {

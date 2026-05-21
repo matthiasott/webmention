@@ -1,5 +1,10 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.4.4 – 2026-05-21
+
+### Fixed
+- Fixed a stale webmention count being shown when a webmention is deleted. `Webmention::afterDelete()` now invalidates the target entry's element caches, mirroring the existing `afterSave()` invalidation. Without this, eager-loaded counts (e.g. `entry.getTotalWebmentions()`) would return the pre-deletion total until the cache expired.
+
 ## 1.4.3 – 2026-05-21
 
 ### Fixed
