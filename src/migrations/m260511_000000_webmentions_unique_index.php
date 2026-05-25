@@ -75,9 +75,23 @@ class m260511_000000_webmentions_unique_index extends Migration
             }
         }
 
-        // Step 2: Create unique composite index
+        // Step 2: Create unique composite index.
+        // On MySQL with utf8mb4, indexing source+target (VARCHAR(384) each)
+        // alongside two INTs exceeds InnoDB's 3072-byte key limit, so we use prefix indexes for the URL columns there.
         if (!$this->dryRun) {
-            $this->createIndex(null, $tableName, ['source', 'target', 'targetId', 'targetSiteId'], true);
+            $db = Craft::$app->db;
+            if ($db->getIsMysql()) {
+                $rawTable = $db->getSchema()->getRawTableName($tableName);
+                $indexName = $db->getSchema()->quoteSimpleTableName(
+                    'idx_' . substr(md5($rawTable . 'source_target_targetId_targetSiteId_unique'), 0, 32)
+                );
+                $quotedTable = $db->quoteTableName($tableName);
+                $db->createCommand(
+                    "ALTER TABLE $quotedTable ADD UNIQUE INDEX $indexName (`source`(380), `target`(380), `targetId`, `targetSiteId`)"
+                )->execute();
+            } else {
+                $this->createIndex(null, $tableName, ['source', 'target', 'targetId', 'targetSiteId'], true);
+            }
         } else {
             Craft::info("[DRY RUN] Would create unique index on (source, target, targetId, targetSiteId)", __METHOD__);
         }
