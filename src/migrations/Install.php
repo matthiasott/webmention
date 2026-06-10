@@ -15,8 +15,11 @@ class Install extends Migration
 
         $tableName = Webmention::tableName();
 
-        // 3072 / 4 (bytes per char) / 2 (target, source) = 384,
-        // the maximum size we can safely allow in URLs w/o hitting MySQL's max index size limit
+        // source/target are varchar(384). On MySQL/utf8mb4 each char is 4 bytes,
+        // so the two-column (target, source) index below is 384*4*2 = 3072 bytes,
+        // exactly InnoDB's max key length. The unique index further down also
+        // includes targetId + targetSiteId (4 bytes each), so it indexes the URLs
+        // by a 382-char prefix to stay within 3072 (see below).
         $this->createTable($tableName, [
             'id' => $this->integer()->notNull(),
             'source' => $this->string(384)->notNull(),
@@ -42,6 +45,20 @@ class Install extends Migration
         $this->createIndex(null, $tableName, ['target', 'source'], false);
         $this->createIndex(null, $tableName, ['targetId', 'targetSiteId', 'source'], false);
         $this->createIndex(null, $tableName, ['parentId'], false);
+
+        // Unique dedup index, mirroring m260511_000000_webmentions_unique_index.
+        // On MySQL the URL columns are indexed by a 382-char prefix so the key
+        // (382*4*2 + 4 + 4 = 3064 bytes) stays within InnoDB's 3072-byte limit;
+        // 382 chars is far beyond any real URL, so uniqueness is unaffected.
+        if ($this->db->getIsMysql()) {
+            $this->execute(
+                'ALTER TABLE ' . $tableName . ' ADD UNIQUE INDEX ' .
+                'idx_webmentions_source_target_target_id_site_id ' .
+                '(source(382), target(382), targetId, targetSiteId)'
+            );
+        } else {
+            $this->createIndex(null, $tableName, ['source', 'target', 'targetId', 'targetSiteId'], true);
+        }
         $this->addForeignKey(null, $tableName, ['id'], Table::ELEMENTS, ['id'], 'CASCADE', null);
         $this->addForeignKey(null, $tableName, ['targetId'], Table::ELEMENTS, ['id'], 'CASCADE', null);
         $this->addForeignKey(null, $tableName, ['targetSiteId'], Table::SITES, ['id'], 'CASCADE', null);

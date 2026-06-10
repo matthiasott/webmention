@@ -1,8 +1,10 @@
 # Release Notes for Webmention for Craft CMS
 
-## 1.4.4 – 2026-05-21
+## 1.4.4 – 2026-06-10
 
 ### Fixed
+- Fixed `m260511_000000_webmentions_unique_index` crashing on MySQL/utf8mb4 with `SQLSTATE[42000]: ... Specified key was too long; max key length is 3072 bytes`. The unique index spans `(source, target, targetId, targetSiteId)`; with `varchar(384)` URL columns at 4 bytes/char plus two 4-byte int columns, the key was 3080 bytes — 8 over InnoDB's limit. The index now uses a 380-char prefix on `source`/`target` on MySQL (3048 bytes), keeping the columns and their stored data unchanged. Postgres (which charges actual byte length, not the column max) keeps the full-column index. The migration is also now idempotent, so it re-applies cleanly after the earlier failure. Installs whose URL columns were still `utf8` (3 bytes/char) were unaffected and are unchanged.
+- `Install` now also creates the unique dedup index on fresh installs, which previously only created the non-unique indexes.
 - Fixed a stale webmention count being shown when a webmention is deleted. `Webmention::afterDelete()` now invalidates the target entry's element caches, mirroring the existing `afterSave()` invalidation. Without this, eager-loaded counts (e.g. `entry.getTotalWebmentions()`) would return the pre-deletion total until the cache expired.
 
 ## 1.4.3 – 2026-05-21

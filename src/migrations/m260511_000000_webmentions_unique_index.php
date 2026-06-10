@@ -79,6 +79,11 @@ class m260511_000000_webmentions_unique_index extends Migration
         // On MySQL with utf8mb4, indexing source+target (VARCHAR(384) each)
         // alongside two INTs exceeds InnoDB's 3072-byte key limit, so we use prefix indexes for the URL columns there.
         if (!$this->dryRun) {
+            // Drop any index left behind by a prior failed/partial run so this
+            // migration is safe to re-apply (the 1.4.3 release crashed here on
+            // MySQL/utf8mb4, leaving the migration unrecorded and pending).
+            $this->dropIndexIfExists($tableName, ['source', 'target', 'targetId', 'targetSiteId'], true);
+
             $db = Craft::$app->db;
             if ($db->getIsMysql()) {
                 $rawTable = $db->getSchema()->getRawTableName($tableName);
