@@ -1,5 +1,27 @@
 # Release Notes for Webmention for Craft CMS
 
+## 1.5.0 – 2026-08-16
+
+### Security
+- **High**: Closed an SSRF and resource-exhaustion hole on the *sending* side. `Sender` previously fetched every outbound target with a bare Guzzle client — no host validation, no redirect control, no size cap, no timeouts — while the receiving side had all four. Anyone able to get a URL into entry content (front-end guest entries, imports, or simply being a site you link to) could answer endpoint discovery with a redirect to `127.0.0.1`, `169.254.169.254`, or any intranet host, and the plugin would follow it and POST attacker-chosen `source`/`target` parameters there. Endpoint discovery and webmention delivery now run through the same guarded pipeline as the receive path, and the discovered endpoint itself is re-validated before anything is sent to it. The send side is strictly public-only — there is no `trustedSourceHosts` bypass for outbound delivery.
+- **Medium**: Closed a DNS-rebinding time-of-check/time-of-use gap in the outbound guards. The IP validation and the actual connection each performed their own DNS lookup, so an attacker controlling a domain with TTL-0 records could return a public address to the check and a private one to the connection. Outbound requests now resolve the host once, validate every returned A/AAAA record, and pin the connection to a validated address via `CURLOPT_RESOLVE`, so the address that was checked is the address that is dialled. TLS certificate validation is unaffected — the hostname is still used for SNI and certificate matching.
+- **Medium**: Redirect following is now performed explicitly rather than delegated to Guzzle, with the full host resolution, private-range check, IP pin, and `http(s)`-scheme check re-applied at every hop, and a hard cap on hop count. `303` responses (and `301`/`302` on the send path) correctly downgrade `POST` to `GET`, so a redirect can't be used to replay form parameters at a second host.
+- **Medium**: Added `webmentions-view` and `webmentions-manage` user permissions. Previously any authenticated control-panel user — including accounts provisioned for a single low-privilege purpose — could read the failure log (which exposes source/target URLs and redacted stack traces), trigger retries that force outbound fetches, purge failure records, and delete webmention elements.
+- **Low**: Host values interpolated into the Mastodon parent-lookup `LIKE` patterns are now escaped, so `%` and `_` can't widen the match. The queries were already parameter-bound, so this was never SQL injection; the worst case was a reply threaded under the wrong parent.
+- **Low**: Backlink verification is stricter. URL normalization no longer lowercases the path, so `/Post/1` and `/post/1` are treated as different pages, and the `ref` tracking parameter is now stripped only as an exact key or a `ref_*` prefix instead of matching anything starting with `ref` — `referrer` and `reference` are treated as content parameters again.
+- **Low**: The per-IP rate limit and the 5-minute `(source, target)` deduplication are now mutex-guarded instead of read-then-write, so a burst of concurrent requests can no longer all slip past the same check. Both fail closed under lock contention. The unique database index remains the authoritative dedup backstop.
+
+### Fixed
+- Fixed replies being attributed to the wrong person when the source page carries several h-cards. When neither the source URL nor the author URL yielded a representative h-card, the parser fell back to taking the *last* h-card found anywhere in the document — on thread and conversation pages (Mastodon in particular) that is usually an unrelated participant or the site owner, whose name and avatar were then stamped onto the reply. An h-card is now only adopted if its `u-url` matches the entry's author URL, or if it is the single unambiguous h-card on the page; otherwise the author data parsed from the h-entry is kept as-is.
+
+### Added
+- Added a `webmention/webmentions/refetch-bad-authors` console command that re-queues existing webmentions for re-parsing, so rows whose `authorName` was corrupted by the old h-card fallback can be repaired in place. Supports `--like`, `--target`, `--limit`, and `--dry-run`.
+
+### Changed
+- Outbound webmention delivery now refuses endpoints on non-public hosts outright. If you send webmentions to a receiver on a private network, delivery to it will now fail.
+- Backlink matching is case-sensitive in the path and stricter about `ref` parameters. A source that previously verified only because of a path-case difference or a stray `ref=` parameter will no longer verify.
+- Control-panel access now requires the new `webmentions-view` / `webmentions-manage` permissions. Admins (and all users on Craft Solo) are unaffected; on Team and Pro, grant the permissions to the relevant user groups after upgrading, or the Webmentions nav item will be hidden for non-admins.
+
 ## 1.4.4 – 2026-06-10
 
 ### Fixed
