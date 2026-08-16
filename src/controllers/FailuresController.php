@@ -15,6 +15,7 @@ class FailuresController extends Controller
     public function actionIndex(): Response
     {
         $this->requireCpRequest();
+        $this->requirePermission('webmentions-view');
 
         $failures = WebmentionFailure::find()
             ->orderBy(['lastAttemptedAt' => SORT_DESC])
@@ -29,6 +30,7 @@ class FailuresController extends Controller
     {
         $this->requirePostRequest();
         $this->requireCpRequest();
+        $this->requirePermission('webmentions-manage');
 
         $id = $this->request->getRequiredBodyParam('id');
         $failure = WebmentionFailure::findOne($id);
@@ -52,6 +54,7 @@ class FailuresController extends Controller
     {
         $this->requirePostRequest();
         $this->requireCpRequest();
+        $this->requirePermission('webmentions-manage');
 
         $id = $this->request->getRequiredBodyParam('id');
         $failure = WebmentionFailure::findOne($id);
@@ -70,8 +73,10 @@ class FailuresController extends Controller
     {
         $this->requirePostRequest();
         $this->requireCpRequest();
+        $this->requirePermission('webmentions-manage');
 
         foreach (WebmentionFailure::find()->all() as $failure) {
+            /** @var WebmentionFailure $failure */
             Queue::push(new ReceiveWebmention([
                 'source' => $failure->source,
                 'target' => $failure->target,
@@ -88,6 +93,7 @@ class FailuresController extends Controller
     {
         $this->requirePostRequest();
         $this->requireCpRequest();
+        $this->requirePermission('webmentions-manage');
 
         WebmentionFailure::deleteAll();
 

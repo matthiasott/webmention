@@ -17,9 +17,11 @@ use craft\events\DefineEagerLoadingMapEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\events\RegisterUserPermissionsEvent;
 use craft\log\MonologTarget;
 use craft\services\Entries;
 use craft\services\Fields;
+use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use matthiasott\webmention\behaviors\ElementBehavior;
@@ -60,6 +62,16 @@ class Plugin extends BasePlugin
     public function init(): void
     {
         parent::init();
+
+        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS, function(RegisterUserPermissionsEvent $event) {
+            $event->permissions[] = [
+                'heading' => Craft::t('webmention', 'Webmentions'),
+                'permissions' => [
+                    'webmentions-view' => ['label' => Craft::t('webmention', 'View webmentions and the failure log')],
+                    'webmentions-manage' => ['label' => Craft::t('webmention', 'Manage webmentions (retry, dismiss, and delete)')],
+                ],
+            ];
+        });
 
         Event::on(Entry::class, Entry::EVENT_AFTER_SAVE, function(ModelEvent $event) {
             $this->webmentions->onSaveEntry($event);
@@ -173,6 +185,10 @@ class Plugin extends BasePlugin
 
     public function getCpNavItem(): ?array
     {
+        if (!Craft::$app->getUser()->checkPermission('webmentions-view')) {
+            return null;
+        }
+
         try {
             $failureCount = (int) WebmentionFailure::find()->count();
         } catch (\Throwable) {

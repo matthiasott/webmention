@@ -327,12 +327,12 @@ JS, [
 
     public function canView(User $user): bool
     {
-        return true;
+        return $user->can('webmentions-view');
     }
 
     public function canDelete(User $user): bool
     {
-        return true;
+        return $user->can('webmentions-manage');
     }
 
     public function afterSave(bool $isNew): void
