@@ -11,23 +11,19 @@
 
 namespace matthiasott\webmention\services;
 
-use Craft;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\RequestOptions;
+use matthiasott\webmention\models\Settings;
+use matthiasott\webmention\Plugin;
 use yii\base\Component;
 
 class Sender extends Component
 {
-    public Client $client;
-
-    public function init()
+    /**
+     * The Webmentions service, which supplies the guarded outbound request
+     * helpers. Overridable so tests can substitute a stub without booting Craft.
+     */
+    protected function webmentions(): Webmentions
     {
-        parent::init();
-
-        if (!isset($this->client)) {
-            $this->client = Craft::createGuzzleClient();
-        }
+        return Plugin::getInstance()->webmentions;
     }
 
     /**
@@ -46,13 +42,11 @@ class Sender extends Component
         }
 
         try {
-            $this->client->post($endpoint, [
-                RequestOptions::FORM_PARAMS => [
-                    'source' => $source,
-                    'target' => $target,
-                ],
+            $this->webmentions()->safePostForm($endpoint, [
+                'source' => $source,
+                'target' => $target,
             ]);
-        } catch (GuzzleException) {
+        } catch (\Throwable) {
             return false;
         }
 
@@ -61,10 +55,11 @@ class Sender extends Component
 
     public function getEndpoint(string $target): string|false
     {
+        $webmentions = $this->webmentions();
+
         try {
-            $endpoint = $this->_findEndpointInHeaders($target)
-                ?? $this->_findEndpointInBody($target);
-        } catch (GuzzleException) {
+            $endpoint = $this->_findEndpointInHeaders($target) ?? $this->_findEndpointInBody($target);
+        } catch (\Throwable) {
             return false;
         }
 
@@ -72,16 +67,22 @@ class Sender extends Component
             return false;
         }
 
-        if (!filter_var($endpoint, FILTER_VALIDATE_URL)) {
-            return $this->_relativeToAbsoluteUrl($endpoint, $target);
+        try {
+            $endpoint = $webmentions->resolveUrl($endpoint, $target);
+        } catch (\Throwable) {
+            return false;
         }
 
-        return $endpoint;
+        return $webmentions->safeUrl($endpoint) ?: false;
     }
 
     private function _findEndpointInBody(string $url): ?string
     {
-        $response = $this->client->get($url);
+        try {
+            $response = $this->webmentions()->safeOutboundRequest('GET', $url, Settings::MAX_SOURCE_BODY_SIZE);
+        } catch (\Throwable) {
+            return null;
+        }
         $body = (string) $response->getBody();
 
         $doc = new \DOMDocument();
@@ -107,7 +108,11 @@ class Sender extends Component
 
     private function _findEndpointInHeaders(string $url): ?string
     {
-        $response = $this->client->head($url);
+        try {
+            $response = $this->webmentions()->safeOutboundRequest('HEAD', $url);
+        } catch (\Throwable) {
+            return null;
+        }
 
         foreach ($response->getHeader('Link') as $headerValue) {
             // Multiple link-values may be comma-separated in a single header line
@@ -126,50 +131,11 @@ class Sender extends Component
                     }
                 }
                 if (in_array('webmention', $rels, true) || in_array('http://webmention.org/', $rels, true)) {
-                    return $uriRef === '' ? $url : $this->_relativeToAbsoluteUrl($uriRef, $url);
+                    return $uriRef === '' ? $url : $uriRef;
                 }
             }
         }
 
         return null;
-    }
-
-    private function _relativeToAbsoluteUrl(string $url, string $base): string
-    {
-        // return if already absolute URL
-        if (parse_url($url, PHP_URL_SCHEME) != '') {
-            return $url;
-        }
-
-        // queries and anchors
-        if ($url[0] == '#' || $url[0] == '?') {
-            return $base . $url;
-        }
-
-        // parse base URL and convert to local variables: $scheme, $host, $path
-        $urlInfo = parse_url($base);
-        $scheme = $urlInfo['scheme'];
-        $host = $urlInfo['host'];
-        $path = $urlInfo['path'];
-
-        // remove non-directory element from path
-        $path = preg_replace('#/[^/]*$#', '', $path);
-
-        // destroy path if relative url points to root
-        if ($url[0] == '/') {
-            $path = '';
-        }
-
-        // dirty absolute URL
-        $abs = "$host$path/$url";
-
-        // replace '//' or '/./' or '/foo/../' with '/'
-        $re = ['#(/\.?/)#', '#/(?!\.\.)[^/]+/\.\./#'];
-
-        for ($n = 1; $n > 0; $abs = preg_replace($re, '/', $abs, -1, $n)) {
-        }
-
-        // absolute URL is ready!
-        return $scheme . '://' . $abs;
     }
 }
