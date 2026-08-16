@@ -283,7 +283,6 @@ class Webmentions extends Component
         }
 
         // Only check for redirects if we haven't found a direct match, and limit the number of HEAD requests
-        $client = Craft::createGuzzleClient();
         $redirectCheckCount = 0;
         $maxRedirectChecks = 10;
 
@@ -300,16 +299,21 @@ class Webmentions extends Component
 
             // Skip URLs resolving to private/reserved IPs (SSRF protection), unless the
             // source host is trusted — trust extends to links discovered on the source page.
-            if (!$isTrusted && !$this->isResolvableUrl($linkUrl)) {
+            $probeIps = $isTrusted ? null : $this->resolvePublicIps($linkUrl);
+            if (!$isTrusted && $probeIps === null) {
                 continue;
             }
 
             try {
-                $head = $client->head($linkUrl, [
+                $opts = [
                     RequestOptions::ALLOW_REDIRECTS => false,
                     RequestOptions::CONNECT_TIMEOUT => 5,
                     RequestOptions::TIMEOUT => 5,
-                ]);
+                ];
+                if (!$isTrusted) {
+                    $opts['curl'] = [CURLOPT_RESOLVE => $this->pinEntries($linkUrl, $probeIps)];
+                }
+                $head = $this->createHttpClient($opts)->head($linkUrl);
                 $redirectCheckCount++;
             } catch (GuzzleException) {
                 continue;
@@ -332,17 +336,18 @@ class Webmentions extends Component
     }
 
     /**
-     * Check if a URL's domain is resolvable via DNS.
-     * Returns false for local/test TLDs that won't resolve.
+     * Resolve a URL's host to public IPs via DNS.
+     * Returns null for local/test TLDs, IP literals, unresolvable hosts,
+     * or hosts where any A/AAAA record is in a private/reserved range.
+     * Returns the array of resolved IPs (A records first, then AAAA) on success.
      *
-     * @param string $url
-     * @return bool
+     * @return string[]|null
      */
-    protected function isResolvableUrl(string $url): bool
+    protected function resolvePublicIps(string $url): ?array
     {
         $host = parse_url($url, PHP_URL_HOST);
         if (!$host) {
-            return false;
+            return null;
         }
 
         // Skip local/test TLDs that won't resolve
@@ -350,12 +355,12 @@ class Webmentions extends Component
         $hostParts = explode('.', $host);
         $tld = strtolower(end($hostParts));
         if (in_array($tld, $localTlds, true)) {
-            return false;
+            return null;
         }
 
         // Skip localhost and IP addresses
         if ($host === 'localhost' || filter_var($host, FILTER_VALIDATE_IP)) {
-            return false;
+            return null;
         }
 
         // Query both A and AAAA records
@@ -364,10 +369,10 @@ class Webmentions extends Component
         $allRecords = array_merge($aRecords, $aaaaRecords);
 
         if (empty($allRecords)) {
-            return false;
+            return null;
         }
 
-        // Validate each resolved IP against private/reserved ranges
+        $ips = [];
         foreach ($allRecords as $record) {
             $ip = $record['ip'] ?? $record['ipv6'] ?? null;
             if (!$ip) {
@@ -376,11 +381,40 @@ class Webmentions extends Component
 
             if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 \Craft::warning("Refusing URL {$url}: resolved IP {$ip} is in private/reserved range");
-                return false;
+                return null;
             }
+
+            $ips[] = $ip;
         }
 
-        return true;
+        return $ips ?: null;
+    }
+
+    protected function isResolvableUrl(string $url): bool
+    {
+        return $this->resolvePublicIps($url) !== null;
+    }
+
+    /**
+     * Build a CURLOPT_RESOLVE entry list pinning the URL's host to the
+     * first pre-validated IP (A-first ordering from resolvePublicIps()).
+     * Pinning closes the DNS-rebinding TOCTOU between validation and connect.
+     *
+     * @param string[]|null $ips
+     * @return string[]
+     */
+    protected function pinEntries(string $url, ?array $ips): array
+    {
+        if (empty($ips)) {
+            return [];
+        }
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!$host) {
+            return [];
+        }
+        $port = parse_url($url, PHP_URL_PORT)
+            ?: (strcasecmp((string) parse_url($url, PHP_URL_SCHEME), 'https') === 0 ? 443 : 80);
+        return [$host . ':' . $port . ':' . $ips[0]];
     }
 
     /**
@@ -399,7 +433,8 @@ class Webmentions extends Component
 
     /**
      * Performs a safe outbound HTTP request with pre-flight host validation,
-     * redirect control, and optional response body size enforcement.
+     * manual redirect following with per-hop validation and IP pinning,
+     * and optional response body size enforcement.
      *
      * @param string $method The HTTP method ('GET' or 'HEAD')
      * @param string $url The request URL
@@ -409,59 +444,84 @@ class Webmentions extends Component
      *                      that have already verified the source via `isTrustedSource()`.
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \RuntimeException If the host is non-resolvable (and not trusted), a redirect
-     *                          targets a private/reserved IP (and not trusted), or the
-     *                          response body exceeds $maxBodyBytes.
+     *                          targets a private/reserved or non-http(s) URL (and not trusted),
+     *                          too many redirects occur, or the response body exceeds $maxBodyBytes.
      */
-    protected function safeOutboundRequest(
+    public function safeOutboundRequest(
         string $method,
         string $url,
         int $maxBodyBytes = 0,
         bool $trusted = false,
     ): \Psr\Http\Message\ResponseInterface {
-        // Pre-flight host check (skipped when the caller has marked this source trusted)
-        if (!$trusted && !$this->isResolvableUrl($url)) {
-            throw new \RuntimeException("Refusing to fetch non-resolvable host: {$url}");
-        }
+        $maxRedirects = 5;
+        $redirects = 0;
+        $currentUrl = $url;
 
-        $options = [
-            RequestOptions::CONNECT_TIMEOUT => 10,
-            RequestOptions::TIMEOUT => 30,
-        ];
+        while (true) {
+            if ($redirects > $maxRedirects) {
+                throw new \RuntimeException("Too many redirects for: {$url}");
+            }
 
-        // Redirect handling
-        if ($method === 'GET') {
-            $options[RequestOptions::ALLOW_REDIRECTS] = [
-                'max' => 5,
-                'on_redirect' => function($request, $response, $uri) use ($trusted) {
-                    if (!$trusted && !$this->isResolvableUrl((string) $uri)) {
-                        throw new \RuntimeException("Redirect target is in private/reserved range: {$uri}");
-                    }
-                },
+            // Pre-flight host validation + IP resolution for pinning (skipped when trusted)
+            $ips = $trusted ? null : $this->resolvePublicIps($currentUrl);
+            if (!$trusted && $ips === null) {
+                throw new \RuntimeException("Refusing to fetch non-resolvable host: {$currentUrl}");
+            }
+
+            $options = [
+                RequestOptions::CONNECT_TIMEOUT => 10,
+                RequestOptions::TIMEOUT => 30,
+                RequestOptions::ALLOW_REDIRECTS => false,
             ];
-        } else {
-            $options[RequestOptions::ALLOW_REDIRECTS] = false;
-        }
+            if (!$trusted) {
+                $options['curl'] = [CURLOPT_RESOLVE => $this->pinEntries($currentUrl, $ips)];
+            }
 
-        // Body size enforcement (only for GET with maxBodyBytes > 0)
-        if ($maxBodyBytes > 0) {
-            $options[RequestOptions::ON_HEADERS] = function(\Psr\Http\Message\ResponseInterface $response) use ($maxBodyBytes) {
-                $contentLength = (int) $response->getHeaderLine('Content-Length');
-                if ($contentLength > 0 && $contentLength > $maxBodyBytes) {
-                    throw new \RuntimeException("Response Content-Length {$contentLength} exceeds {$maxBodyBytes} byte limit");
+            if ($maxBodyBytes > 0 && $method === 'GET') {
+                $options[RequestOptions::ON_HEADERS] = function(\Psr\Http\Message\ResponseInterface $response) use ($maxBodyBytes) {
+                    $contentLength = (int) $response->getHeaderLine('Content-Length');
+                    if ($contentLength > 0 && $contentLength > $maxBodyBytes) {
+                        throw new \RuntimeException("Response Content-Length {$contentLength} exceeds {$maxBodyBytes} byte limit");
+                    }
+                };
+                $options[RequestOptions::STREAM] = true;
+            }
+
+            $client = $this->createHttpClient($options);
+            $response = $method === 'GET' ? $client->get($currentUrl) : $client->head($currentUrl);
+
+            $status = $response->getStatusCode();
+            if (in_array($status, [301, 302, 303, 307, 308], true) && $response->hasHeader('Location')) {
+                $nextUrl = trim($response->getHeaderLine('Location'));
+                try {
+                    $nextUrl = $this->resolveUrl($nextUrl, $currentUrl);
+                } catch (\Throwable) {
+                    break; // unresolvable Location: return the redirect response as-is
                 }
-            };
-            $options[RequestOptions::STREAM] = true;
+                $scheme = strtolower((string) parse_url($nextUrl, PHP_URL_SCHEME));
+                if ($scheme !== 'http' && $scheme !== 'https') {
+                    throw new \RuntimeException("Refusing to follow redirect to non-http(s) URL: {$nextUrl}");
+                }
+                if ($status === 303) {
+                    $method = 'GET'; // RFC 7231 §6.4.4
+                }
+                $currentUrl = $nextUrl;
+                $redirects++;
+                continue;
+            }
+
+            break;
         }
 
-        $client = $this->createHttpClient($options);
+        return $this->capResponseBody($response, $maxBodyBytes);
+    }
 
-        if ($method === 'GET') {
-            $response = $client->get($url);
-        } else {
-            $response = $client->head($url);
-        }
-
-        // Byte-counting sink for streamed responses
+    /**
+     * Enforce a byte cap on a (possibly streamed) response body, replacing
+     * the body with the accumulated string for downstream consumers.
+     */
+    protected function capResponseBody(\Psr\Http\Message\ResponseInterface $response, int $maxBodyBytes): \Psr\Http\Message\ResponseInterface
+    {
         if ($maxBodyBytes > 0 && $response->getBody()->isReadable()) {
             $body = $response->getBody();
             $accumulated = '';
@@ -474,11 +534,82 @@ class Webmentions extends Component
                 }
                 $accumulated .= $chunk;
             }
-            // Replace body with accumulated string for downstream consumers
             $response = $response->withBody(Utils::streamFor($accumulated));
         }
 
         return $response;
+    }
+
+    /**
+     * Performs a strict outbound form POST (or redirect-followed GET) to a
+     * public host, with IP pinning, redirect validation, and a response
+     * body size cap. Used by the Sender for webmention delivery.
+     *
+     * @param string $url The endpoint URL
+     * @param array $params Form parameters to POST
+     * @param int $maxBodyBytes Max response body bytes
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \RuntimeException On non-resolvable/redirected-to private hosts,
+     *                          non-http(s) redirects, too many redirects, or an
+     *                          oversized response body.
+     */
+    public function safePostForm(string $url, array $params, int $maxBodyBytes = 1048576): \Psr\Http\Message\ResponseInterface
+    {
+        $maxRedirects = 3;
+        $redirects = 0;
+        $currentUrl = $url;
+        $method = 'POST';
+
+        while (true) {
+            if ($redirects > $maxRedirects) {
+                throw new \RuntimeException("Too many redirects for: {$url}");
+            }
+
+            $ips = $this->resolvePublicIps($currentUrl);
+            if ($ips === null) {
+                throw new \RuntimeException("Refusing to send to non-resolvable host: {$currentUrl}");
+            }
+
+            $options = [
+                RequestOptions::CONNECT_TIMEOUT => 10,
+                RequestOptions::TIMEOUT => 30,
+                RequestOptions::ALLOW_REDIRECTS => false,
+                RequestOptions::ON_HEADERS => function(\Psr\Http\Message\ResponseInterface $response) use ($maxBodyBytes) {
+                    $contentLength = (int) $response->getHeaderLine('Content-Length');
+                    if ($contentLength > 0 && $contentLength > $maxBodyBytes) {
+                        throw new \RuntimeException("Response Content-Length {$contentLength} exceeds {$maxBodyBytes} byte limit");
+                    }
+                },
+                RequestOptions::STREAM => true,
+                'curl' => [CURLOPT_RESOLVE => $this->pinEntries($currentUrl, $ips)],
+            ];
+            if ($method === 'POST') {
+                $options[RequestOptions::FORM_PARAMS] = $params;
+            }
+
+            $client = $this->createHttpClient($options);
+            $response = $method === 'POST' ? $client->post($currentUrl) : $client->get($currentUrl);
+
+            $status = $response->getStatusCode();
+            if (in_array($status, [301, 302, 303, 307, 308], true) && $response->hasHeader('Location')) {
+                $nextUrl = $this->resolveUrl(trim($response->getHeaderLine('Location')), $currentUrl);
+                $scheme = strtolower((string) parse_url($nextUrl, PHP_URL_SCHEME));
+                if ($scheme !== 'http' && $scheme !== 'https') {
+                    throw new \RuntimeException("Refusing to follow redirect to non-http(s) URL: {$nextUrl}");
+                }
+                // 303 always switches to GET; 301/302 switch POST→GET (de-facto standard); 307/308 re-POST
+                if ($status === 303 || ($method === 'POST' && ($status === 301 || $status === 302))) {
+                    $method = 'GET';
+                }
+                $currentUrl = $nextUrl;
+                $redirects++;
+                continue;
+            }
+
+            break;
+        }
+
+        return $this->capResponseBody($response, $maxBodyBytes);
     }
 
     /**
