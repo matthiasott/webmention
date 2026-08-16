@@ -1,0 +1,3 @@
+# Keep the test suite in the repository but out of the Composer dist tarball,
+# so it never lands in vendor/ on installed sites.
+/tests export-ignore
