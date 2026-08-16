@@ -69,26 +69,33 @@ class WebmentionController extends Controller
             return $this->asRaw('Rate limit exceeded')->setStatusCode(429);
         }
 
-        // Short-window dedup: same (source, target) within 5 min.
         $cache = Craft::$app->cache;
         $pairKey = 'webmention:pair:' . hash('sha256', $source . '|' . $target);
-        if ($cache->get($pairKey)) {
-            return $this->asRaw('')->setStatusCode(202);
+        $mutex = Craft::$app->getMutex();
+        $lockKey = 'webmention:pair-lock:' . hash('sha256', $source . '|' . $target);
+
+        if (!$mutex->acquire($lockKey, 0)) {
+            return $this->asRaw('')->setStatusCode(202); // treat as duplicate under contention
         }
 
-        // Failure-aware backoff: pairs that have failed repeatedly are skipped
-        // until cleanup purges them, so attackers can't keep amplifying fetches
-        // against the same target.
-        if ($webmentions->isFailureBackedOff($source, $target)) {
-            return $this->asRaw('')->setStatusCode(202);
+        try {
+            if ($cache->get($pairKey)) {
+                return $this->asRaw('')->setStatusCode(202);
+            }
+
+            if ($webmentions->isFailureBackedOff($source, $target)) {
+                return $this->asRaw('')->setStatusCode(202);
+            }
+
+            $cache->set($pairKey, true, 300);
+
+            Queue::push(new ReceiveWebmention([
+                'source' => $source,
+                'target' => $target,
+            ]));
+        } finally {
+            $mutex->release($lockKey);
         }
-
-        $cache->set($pairKey, true, 300);
-
-        Queue::push(new ReceiveWebmention([
-            'source' => $source,
-            'target' => $target,
-        ]));
 
         // Return 202 Accepted, according to https://www.w3.org/TR/webmention/#h-sender-notifies-receiver
         return $this->asRaw('')->setStatusCode(202);

@@ -777,14 +777,23 @@ class Webmentions extends Component
 
         $cache = Craft::$app->cache;
         $key = 'webmention:rl:' . $ip;
-        $count = (int) $cache->get($key);
+        $mutex = Craft::$app->getMutex();
+        $lockKey = 'webmention:rl-lock:' . md5($ip);
 
-        if ($count >= $limit) {
-            return true;
+        if (!$mutex->acquire($lockKey, 0)) {
+            return true; // fail closed under contention
         }
 
-        $cache->set($key, $count + 1, 3600);
-        return false;
+        try {
+            $count = (int) $cache->get($key);
+            if ($count >= $limit) {
+                return true;
+            }
+            $cache->set($key, $count + 1, 3600);
+            return false;
+        } finally {
+            $mutex->release($lockKey);
+        }
     }
 
     /**
