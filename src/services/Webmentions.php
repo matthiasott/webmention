@@ -922,6 +922,49 @@ class Webmentions extends Component
     }
 
     /**
+     * Finds an h-card among parsed mf2 items to represent the entry author, without
+     * guessing. Returns the h-card whose u-url matches $authorUrl; or, when no author
+     * url is known, the only h-card on the page if there is exactly one. Returns null
+     * when the page has several h-cards and none can be tied to the author, so an
+     * unrelated card (e.g. a thread participant or the site owner) never overrides a
+     * reply's identity.
+     *
+     * @param array $items mf2 items
+     * @param string|null $authorUrl Author url parsed from the h-entry, if any
+     * @return array|null
+     */
+    private function findAuthorHCard(array $items, ?string $authorUrl): ?array
+    {
+        $hCards = [];
+        foreach ($items as $item) {
+            if (!empty($item['type']) && is_array($item['type']) && in_array('h-card', $item['type'], true)) {
+                $hCards[] = $item;
+            }
+        }
+
+        if (empty($hCards)) {
+            return null;
+        }
+
+        // If we know the author url, only accept an h-card that points to it.
+        if (!empty($authorUrl)) {
+            $normalizedAuthorUrl = $this->normalizeUrl($authorUrl);
+            foreach ($hCards as $hCard) {
+                foreach ($hCard['properties']['url'] ?? [] as $url) {
+                    $url = is_array($url) ? ($url['value'] ?? null) : $url;
+                    if (is_string($url) && $url !== '' && $this->normalizeUrl($url) === $normalizedAuthorUrl) {
+                        return $hCard;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // No author url to match against: only trust a single, unambiguous h-card.
+        return count($hCards) === 1 ? $hCards[0] : null;
+    }
+
+    /**
      * Parse HTML of a source and populate model
      *
      * @param string $html The HTML of the source
@@ -954,20 +997,24 @@ class Webmentions extends Component
         $this->_checkResponseType($result, $entry, $source, $settings->useBridgy);
 
         // Get h-card and use data for author etc. if not present in h-entry
+        $authorUrl = $result['author']['url'] ?? null;
         $representative = Mf2\HCard\representative($parsed, $source);
 
-        // If the source url doesn't give us a representative h-card, try to get one for author url from parsed html
-        if (!$representative) {
-            $representative = Mf2\HCard\representative($parsed, $result['author']['url']);
+        // If the source url doesn't give us a representative h-card, try to get one
+        // for the author url parsed from the h-entry.
+        if (!$representative && !empty($authorUrl)) {
+            $representative = Mf2\HCard\representative($parsed, $authorUrl);
+        }
 
-            // If this also doesn't work, maybe the h-card can be found in the parsed HTML directly
-            if (!$representative) {
-                foreach ($parsed['items'] as $item) {
-                    if (in_array('h-card', $item['type'])) {
-                        $representative = $item;
-                    }
-                }
-            }
+        // Still nothing: look for an h-card directly in the parsed HTML, but only
+        // adopt one we can actually tie to this entry's author — either its u-url
+        // matches the author url, or it is the single, unambiguous h-card on the
+        // page. Blindly taking the last h-card stamps the wrong identity onto a
+        // reply when the source is a thread or context page that carries several
+        // h-cards (e.g. Mastodon conversation pages), which is what made replies
+        // display under the wrong name.
+        if (!$representative) {
+            $representative = $this->findAuthorHCard($parsed['items'], $authorUrl);
         }
 
         // If author name is empty use the one from the representative h-card
