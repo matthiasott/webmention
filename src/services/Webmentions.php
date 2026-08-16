@@ -1587,6 +1587,8 @@ class Webmentions extends Component
             if ($statusId) {
                 $parsed = parse_url($replyUrl);
                 $host = strtolower($parsed['host'] ?? '');
+                // Escape LIKE wildcards in the host (pattern uses the unescaped flag below)
+                $host = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $host);
                 $id = explode(':', $statusId)[1];
 
                 $parent = Webmention::find()
