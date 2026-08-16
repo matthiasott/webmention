@@ -627,7 +627,7 @@ class Webmentions extends Component
 
         $scheme = isset($parsed['scheme']) ? strtolower($parsed['scheme']) : 'http';
         $host = isset($parsed['host']) ? strtolower($parsed['host']) : '';
-        $path = isset($parsed['path']) ? strtolower($parsed['path']) : '/';
+        $path = isset($parsed['path']) ? $parsed['path'] : '/';
 
         // Remove trailing slash
         $path = rtrim($path, '/');
@@ -670,7 +670,6 @@ class Webmentions extends Component
                 'ss_',        // various email tools
                 'vero_',      // Vero
                 'oly_',       // Omeda
-                'ref',        // general referrer param
             ];
             foreach (array_keys($params) as $key) {
                 foreach ($trackingPrefixes as $prefix) {
@@ -678,6 +677,14 @@ class Webmentions extends Component
                         unset($params[$key]);
                         break;
                     }
+                }
+            }
+            // 'ref' is stripped only as an exact key or 'ref_*' prefix — not any
+            // 'ref…' prefix like 'referrer' or 'reference', which are content params.
+            foreach ($params as $key => $_) {
+                $lk = strtolower((string) $key);
+                if ($lk === 'ref' || str_starts_with($lk, 'ref_')) {
+                    unset($params[$key]);
                 }
             }
             if (!empty($params)) {
