@@ -1,5 +1,10 @@
 # Release Notes for Webmention for Craft CMS
 
+## Unreleased
+
+### Changed
+- The plugin now allows `enshrined/svg-sanitize` 1.x, so it no longer blocks updating to Craft 5.11, which requires `^1.0.0`. 0.19 and later remain supported for older Craft 5 releases. ([#20](https://github.com/matthiasott/webmention/issues/20))
+
 ## 1.5.0 – 2026-08-16
 
 ### Security
