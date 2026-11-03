@@ -1,5 +1,14 @@
 # Release Notes for Webmention for Craft CMS
 
+## Unreleased
+
+### Fixed
+- Fixed the Webmention Switch field's **Default Value** setting being ignored. New entries now start with the switch set to the default, so on fields where the default is on, new entries will start sending webmentions. Existing entries with no stored value stay off.
+- Fixed the string `"false"` turning the Webmention Switch on, which sent webmentions when a client such as Craft's MCP server (Craft 5.12 and later) meant to prevent them.
+
+### Changed
+- The Webmention Switch field is now a boolean in GraphQL and MCP. It was previously a string, so GraphQL clients will receive `true`/`false` instead of `"1"`/`""`, and must send a boolean in mutations.
+
 ## 1.5.1 – 2026-10-22
 
 ### Fixed

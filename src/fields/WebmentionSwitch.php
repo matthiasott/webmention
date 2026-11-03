@@ -7,6 +7,7 @@ use craft\base\ElementInterface;
 use craft\base\Field;
 use craft\helpers\Cp;
 use craft\helpers\Db;
+use GraphQL\Type\Definition\Type;
 use yii\db\Schema;
 
 class WebmentionSwitch extends Field
@@ -38,6 +39,32 @@ class WebmentionSwitch extends Field
     }
 
     public bool $default = false;
+
+    public function normalizeValue(mixed $value, ?ElementInterface $element): mixed
+    {
+        // The default is for new elements only. An existing element with no stored
+        // value stays off, so it can't start sending webmentions on its next save.
+        if ($value === null) {
+            return $this->isFresh($element) && $this->default;
+        }
+
+        // Not a (bool) cast, which would turn the string "false" into true.
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public function getContentGqlType(): Type|array
+    {
+        return Type::boolean();
+    }
+
+    public function getContentGqlMutationArgumentType(): Type|array
+    {
+        return [
+            'name' => $this->handle,
+            'type' => Type::boolean(),
+            'description' => $this->instructions,
+        ];
+    }
 
     public function getSettingsHtml(): ?string
     {
