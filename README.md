@@ -337,6 +337,17 @@ If all you want to do is output the total, you can set the `with` path's criteri
 
 Alternatively, you can use the `element.getTotalWebmentions()` and `getTotalWebmentionsByType()` methods to output the total. Both methods support eager-loading as well.
 
+On Craft 5.12 and later, you can also set the order of eager-loaded Webmentions with `orderBy` in the path's criteria. Earlier versions of Craft ignore it.
+
+```twig
+{% set entries = craft.entries()
+  .section('blog')
+  .with([
+    ['webmentions:comment', {orderBy: 'webmentions.published desc'}],
+  ])
+  .all() %}
+```
+
 ### Webmention form
 
 You can output a form in your entry template that lets people directly send you the URL of a response:
