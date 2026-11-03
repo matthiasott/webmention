@@ -1514,6 +1514,7 @@ class Webmentions extends Component
 
         if (
             $entry->propagating ||
+            $entry->resaving ||
             $entry->getIsDraft() ||
             $entry->getIsRevision() ||
             $entry->getStatus() !== Entry::STATUS_LIVE
