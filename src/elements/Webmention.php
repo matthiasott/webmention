@@ -412,7 +412,6 @@ JS, [
                     $map[] = ['source' => $element->id, 'target' => $element->avatarId];
                 }
             }
-            /** @phpstan-ignore-next-line */
             return [
                 'elementType' => Asset::class,
                 'map' => $map,
