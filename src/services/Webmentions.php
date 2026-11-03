@@ -1098,6 +1098,7 @@ class Webmentions extends Component
         }
 
         // Check if webmention for combination of src and target exists
+        $model = null;
         $targetElement = $this->getTargetElement($target);
         if ($targetElement) {
             $model = Webmention::find()
@@ -1105,12 +1106,14 @@ class Webmentions extends Component
                 ->targetSiteId($targetElement::isLocalized() ? $targetElement->siteId : null)
                 ->source($source)
                 ->one();
-        } else {
-            $model = Webmention::find()
-                ->target($target)
-                ->source($source)
-                ->one();
         }
+
+        // A webmention saved before its target could be resolved has no targetId,
+        // so it can only be found by URL. Updating it links it to the target.
+        $model ??= Webmention::find()
+            ->target($target)
+            ->source($source)
+            ->one();
 
         if (!$model) {
             // create new webmention
@@ -1445,6 +1448,7 @@ class Webmentions extends Component
 
         // Does the site URL specify a base path?
         if (
+            $parsedSiteUrl['path'] !== '' &&
             !str_starts_with("{$parsedTarget['path']}/", "{$parsedSiteUrl['path']}/")
         ) {
             return 0;
