@@ -1,0 +1,34 @@
+{
+  "name": "matthiasott/webmention-dev",
+  "description": "Local test site for the Webmention plugin. Not part of the published package.",
+  "type": "project",
+  "license": "MIT",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "craftcms/cms": "^5.6.10",
+    "matthiasott/webmention": "*"
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "/plugin",
+      "options": {
+        "symlink": true,
+        "versions": {
+          "matthiasott/webmention": "1.x-dev"
+        }
+      }
+    }
+  ],
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2.0"
+    },
+    "allow-plugins": {
+      "craftcms/plugin-installer": true,
+      "yiisoft/yii2-composer": true
+    }
+  }
+}

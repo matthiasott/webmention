@@ -1,0 +1,31 @@
+#!/bin/bash
+
+## Description: Build the Webmention test site. Safe to re-run.
+## Usage: setup [--fresh]
+## Example: "ddev setup"
+## Example: "ddev setup --fresh" (deletes all test site data first)
+## ExecRaw: true
+
+set -euo pipefail
+cd /var/www/html
+
+if [ "${1:-}" = "--fresh" ] && [ -f vendor/autoload.php ]; then
+    echo "Deleting test site data..."
+    php craft db/drop-all-tables --interactive=0
+    rm -rf /var/www/html/config/project /var/www/html/web/volumes
+fi
+
+composer install --no-interaction --no-progress
+
+if ! php craft install/check >/dev/null 2>&1; then
+    php craft install/craft --interactive=0 \
+        --username=admin --password='webmention-dev' --email=admin@example.com \
+        --site-name='Webmention Test' --site-url='https://webmention-dev.ddev.site/' --language=en
+fi
+
+# Installing an already installed plugin counts as an error.
+if ! php craft plugin/list | grep -qE '^\s*Webmention\s.*\sYes\s'; then
+    php craft plugin/install webmention --interactive=0
+fi
+
+php scripts/seed.php

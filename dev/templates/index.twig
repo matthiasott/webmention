@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>{{ siteName }}</title>
+</head>
+<body>
+  <h1>{{ siteName }} ({{ currentSite.handle }})</h1>
+  <ul>
+    {% for post in craft.entries().section('blog').all() %}
+      <li><a href="{{ post.url }}">{{ post.title }}</a> ({{ post.getTotalWebmentions() }} webmentions)</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

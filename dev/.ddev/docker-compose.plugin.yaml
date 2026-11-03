@@ -1,0 +1,7 @@
+# Mounts the plugin repository, so Composer can symlink it into vendor/ and code
+# changes apply immediately. The path is relative to this .ddev directory. To test
+# another checkout: WEBMENTION_PLUGIN_PATH=/path/to/it ddev restart
+services:
+  web:
+    volumes:
+      - ${WEBMENTION_PLUGIN_PATH:-../..}:/plugin

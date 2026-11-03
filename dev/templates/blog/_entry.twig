@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>{{ entry.title }}</title>
+  <link rel="webmention" href="{{ craft.webmention.endpointUrl() }}">
+</head>
+<body>
+  <article class="h-entry">
+    <h1 class="p-name">{{ entry.title }}</h1>
+    <div class="e-content">{{ entry.body }}</div>
+  </article>
+
+  {{ craft.webmention.showWebmentions(entry.url) }}
+  {{ craft.webmention.webmentionForm(entry.url) }}
+</body>
+</html>

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run the Webmention integration checks against the test site.
+## Usage: verify
+## Example: "ddev verify"
+
+cd /var/www/html && php scripts/verify.php

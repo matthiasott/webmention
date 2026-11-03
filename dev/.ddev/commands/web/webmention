@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Send a test webmention to the real endpoint and process it.
+## Usage: webmention <target-url> [author-name] [reply|like|mention]
+## Example: "ddev webmention https://webmention-dev.ddev.site/blog/hello-world Jane reply"
+
+cd /var/www/html && php scripts/send.php "$@"

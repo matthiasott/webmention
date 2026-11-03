@@ -61,6 +61,7 @@ This plugin provides a [Webmention](https://www.w3.org/TR/webmention/) endpoint 
     - [Updating to v1.5.0](#updating-to-v150)
     - [Updating from v0.3](#updating-from-v03)
     - [Changelog](#changelog)
+- [Local development](#local-development)
 - [Roadmap](#roadmap)
 - [Thank You!](#thank-you)
 - [License](#license)
@@ -618,6 +619,10 @@ To update from Webmention 0.3 on Craft 2, do the following after upgrading Craft
 ### Changelog
 
 For changes between minor and patch versions, see [CHANGELOG.md](CHANGELOG.md).
+
+## Local development
+
+The [`dev`](dev) folder holds a disposable Craft site for working on the plugin. It runs on [DDEV](https://ddev.com), has two sites on separate domains, and comes with integration checks. It isn't part of the published package. See [its README](dev/README.md) to get started.
 
 ## Roadmap
 

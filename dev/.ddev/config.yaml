@@ -1,0 +1,28 @@
+# Local test site for the Webmention plugin. See ../README.md.
+name: webmention-dev
+type: craftcms
+docroot: web
+php_version: "8.2" # The plugin's minimum PHP version
+webserver_type: nginx-fpm
+database:
+    type: mysql
+    version: "8.0"
+# Bind mounts, so a Composer symlink into the mounted plugin works without file sync.
+performance_mode: none
+additional_hostnames:
+    - webmention-dev-b       # Second Craft site, on its own domain
+    - webmention-dev-sources # Pretends to be other people's websites
+disable_settings_management: true
+# Local development values only. This site is never deployed.
+web_environment:
+    - CRAFT_APP_ID=webmention-dev
+    - CRAFT_ENVIRONMENT=dev
+    - CRAFT_SECURITY_KEY=local-dev-only-not-a-secret-webmention-test-site
+    - CRAFT_DB_DRIVER=mysql
+    - CRAFT_DB_SERVER=db
+    - CRAFT_DB_PORT=3306
+    - CRAFT_DB_DATABASE=db
+    - CRAFT_DB_USER=db
+    - CRAFT_DB_PASSWORD=db
+    - CRAFT_DB_SCHEMA=
+    - CRAFT_DB_TABLE_PREFIX=

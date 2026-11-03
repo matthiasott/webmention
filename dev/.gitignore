@@ -1,0 +1,8 @@
+# Everything here is rebuilt by `ddev setup`.
+/vendor/
+/composer.lock
+/storage/
+/config/project/
+/config/license.key
+/web/cpresources/
+/web/volumes/
