@@ -158,5 +158,4 @@ class m260314_000000_parent_id extends Migration
 
         return $scheme . '://' . $host . $path;
     }
-
 }
