@@ -58,6 +58,7 @@ This plugin provides a [Webmention](https://www.w3.org/TR/webmention/) endpoint 
     - [Retention and deletion](#retention-and-deletion)
 - [Twig reference](#twig-reference)
 - [Upgrade notes](#upgrade-notes)
+    - [Updating to v1.6.0](#updating-to-v160)
     - [Updating to v1.5.0](#updating-to-v150)
     - [Updating from v0.3](#updating-from-v03)
     - [Changelog](#changelog)
@@ -565,6 +566,20 @@ A short index of the most-used Twig helpers exposed by the plugin:
 | `element.getThreadedWebmentions()` | Threaded tree of Webmentions for the element. |
 
 ## Upgrade notes
+
+### Updating to v1.6.0
+
+Three changes may need action after upgrading:
+
+1. **GraphQL.** The Webmention Switch field is now a boolean in GraphQL. Queries return `true` or `false` instead of `"1"` or `""`, and mutations must send a boolean. Update any client that compares the field to a string. Craft's MCP server sees the field as a boolean too.
+2. **Default Value.** The Webmention Switch field's **Default Value** setting used to be ignored, and now it applies. If a field has its default set to on, new entries start with the switch on and send Webmentions as soon as they go live. Existing entries that have never stored a value stay off. If you don't want new entries to send by default, turn the default off in the field's settings.
+3. **Sites on separate domains.** Before v1.6.0, Webmentions to a non-primary site that has its own domain could be saved without an entry, or linked to the primary site's entry with the same URI. To repair them, select them in the Control Panel and run the **Update** action, or re-process them from the command line:
+
+   ```sh
+   php craft webmention/update --target='https://second-site.example/*'
+   ```
+
+   This re-fetches each source, so a source that has since gone offline can't be repaired this way.
 
 ### Updating to v1.5.0
 

@@ -1,6 +1,6 @@
 # Release Notes for Webmention for Craft CMS
 
-## Unreleased
+## 1.6.0 – 2026-11-08
 
 ### Fixed
 - Fixed the Webmention Switch field's **Default Value** setting being ignored. New entries now start with the switch set to the default, so on fields where the default is on, new entries will start sending webmentions. Existing entries with no stored value stay off.
